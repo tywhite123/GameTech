@@ -10,6 +10,8 @@
 using namespace NCL;
 using namespace CSC8503;
 
+//TODO: Task 1 & 2 of tutorial 1 futher work
+
 TutorialGame::TutorialGame()	{
 	world		= new GameWorld();
 	renderer	= new GameTechRenderer(*world);
@@ -159,7 +161,8 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10, 10, 10));
+	InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
+	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(15, 20, 10));
 	//InitSphereGridWorld(w, 10, 10, 50.0f, 50.0f, 10.0f);
 
 	//InitSphereGridWorld(w, 1, 1, 50.0f, 50.0f, 10.0f);
@@ -436,6 +439,7 @@ bool TutorialGame::SelectObject() {
 			}
 
 			Ray ray = CollisionDetection::BuildRayFromMouse(*world->GetMainCamera());
+			Debug::DrawLine(ray.GetPosition(), ray.GetPosition() + (ray.GetDirection()*1000), Vector4(1,0,0,1));
 
 			RayCollision closestCollision;
 			if (world->Raycast(ray, closestCollision, true)) {

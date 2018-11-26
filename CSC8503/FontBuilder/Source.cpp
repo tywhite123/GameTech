@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+
+#define STBI_MSC_SECURE_CRT
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "../Common/stb/stb_truetype.h"
 

@@ -22,22 +22,108 @@ bool CollisionDetection::RayPlaneIntersection(const Ray&r, const Plane&p, RayCol
 }
 
 bool CollisionDetection::RayIntersection(const Ray& r,GameObject& object, RayCollision& collision) {
+	
+	//Get some object information
+	const Transform& transform = object.GetConstTransform();
+	const CollisionVolume* volume = object.GetBoundingVolume();
+
+	if(!volume)
+		return false;
+
+
+	//Call a function based on the volume type
+	switch (volume->type) {
+	case VolumeType::AABB:
+		return RayAABBIntersection(r, transform, (const AABBVolume&)*volume, collision);
+	case VolumeType::OBB:
+		return RayOBBIntersection(r, transform, (const OBBVolume&)*volume, collision);
+	case VolumeType::Sphere:
+		return RaySphereIntersection(r, transform, (const SphereVolume&)*volume, collision);
+	}
+
 	return false;
 }
 
 bool RayBoxIntersection(const Ray&r, const Vector3& boxPos, const Vector3& boxSize, RayCollision& collision) {
-	return false;
+	Vector3 boxMin = boxPos - boxSize;
+	Vector3 boxMax = boxPos + boxSize;
+
+	Vector3 rayPos = r.GetPosition();
+	Vector3 rayDir = r.GetDirection();
+
+	Vector3 tVals;
+
+	for (int i = 0; i < 3; ++i) {
+		if (rayDir[i] > 0)
+			tVals[i] = (boxMin[i] - rayPos[i]) / rayDir[i];
+		else 
+			tVals[i] = (boxMax[i] - rayPos[i]) / rayDir[i];
+	}
+
+	if (tVals.GetMaxElement() < 0.0f)
+		return false; //NO BACKWARDS RAYS (as this assumes rays go both dir)
+
+	Vector3 intersection = rayPos + (rayDir * tVals.GetMaxElement());
+
+	//Epsilon value allow for any leeway from any variation in floating point accuracy
+	const float epsilon = 0.0001f;
+
+	for (int i = 0; i < 3; ++i) {
+		if (intersection[i] + epsilon < boxMin[i] || intersection[i] - epsilon > boxMax[i])
+			return false;
+	}
+
+	collision.collidedAt = intersection;
+	collision.rayDistance = tVals.GetMaxElement();
+	return true;
 }
 
 bool CollisionDetection::RayAABBIntersection(const Ray&r, const Transform& worldTransform, const AABBVolume& volume, RayCollision& collision) {
-	return false;
+	Vector3 boxPos = worldTransform.GetWorldPosition();
+	Vector3 boxSize = volume.GetHalfDimensions();
+
+	return RayBoxIntersection(r, boxPos, boxSize, collision);
 }
 
 bool CollisionDetection::RayOBBIntersection(const Ray&r, const Transform& worldTransform, const OBBVolume& volume, RayCollision& collision) {
-	return false;
+	Matrix3 invTransform = worldTransform.GetInverseWorldOrientationMat();
+
+	//Transform ray into objects local axis
+	Ray tempRay(invTransform * r.GetPosition(), invTransform*r.GetDirection());
+
+	bool collided = RayAABBIntersection(r, worldTransform.GetWorldPosition(), volume.GetHalfDimensions(), collision);
+
+	if(collided)
+		collision.collidedAt = worldTransform.GetWorldMatrix() * collision.collidedAt;
+
+	return collided;
 }
 
 bool CollisionDetection::RaySphereIntersection(const Ray&r, const Transform& worldTransform, const SphereVolume& volume, RayCollision& collision) {
+	Vector3 spherePos = worldTransform.GetWorldPosition();
+	float sphereRadius = volume.GetRadius();
+
+	//Get dir between the ray origin and sphere origin
+	Vector3 dir = (spherePos - r.GetPosition());
+
+	//Project spheres origin onto our ray direction
+	float sphereProj = Vector3::Dot(dir, r.GetDirection());
+
+	//Get closest point
+	Vector3 point = r.GetPosition() + (r.GetDirection() * sphereProj);
+
+	float sphereDist = (point - spherePos).Length();
+
+	if (sphereDist > sphereRadius)
+		return false;
+
+	float sNorm = sphereDist / sphereRadius;
+	sNorm = cos(DegreesToRadians(sNorm*90.0f));
+
+	collision.rayDistance = sphereProj - (sphereRadius * sNorm);
+	collision.collidedAt = r.GetPosition() + (r.GetDirection() * collision.rayDistance);
+
+
 	return false;
 }
 

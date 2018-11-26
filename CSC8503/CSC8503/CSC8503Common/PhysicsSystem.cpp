@@ -176,6 +176,43 @@ based on any forces that have been accumulated in the objects during
 the course of the previous game frame.
 */
 void PhysicsSystem::IntegrateAccel(float dt) {
+	//Iterators for getting the gameworld objects
+	vector<GameObject*>::const_iterator first;
+	vector<GameObject*>::const_iterator last;
+	gameWorld.GetObjectIterators(first, last);
+
+	for(auto i = first; i != last; ++i)
+	{
+		PhysicsObject* obj = (*i)->GetPhysicsObject();
+		if(obj == nullptr)
+			continue; // no physics obj for this game obj
+
+		float inverseMass = obj->GetInverseMass();
+
+		Vector3 linearVel = obj->GetLinearVelocity();
+		Vector3 force = obj->GetForce();
+		Vector3 accel = force * inverseMass;
+
+		if (applyGravity && inverseMass > 0)
+			accel += gravity; //don't move infinitely heavy things
+
+		linearVel += accel * dt;
+		obj->SetLinearVelocity(linearVel);
+
+
+		//Angular stuff
+		Vector3 torque = obj->GetTorque();
+		Vector3 angVel = obj->GetAngularVelocity();
+
+		obj->UpdateInertiaTensor();
+
+		Vector3 angAccel = obj->GetInertiaTensor() * torque;
+
+		angVel += angAccel * dt;
+		obj->SetAngularVelocity(angVel);
+
+
+	}
 
 }
 /*
@@ -185,7 +222,44 @@ throughout a physics update, to slowly move the objects through
 the world, looking for collisions.
 */
 void PhysicsSystem::IntegrateVelocity(float dt) {
+	//Iterators for getting the gameworld objects
+	vector<GameObject*>::const_iterator first;
+	vector<GameObject*>::const_iterator last;
+	gameWorld.GetObjectIterators(first, last);
 
+	float dampingFactor = 1.0f - 0.95;
+	float frameDamping = powf(dampingFactor, dt);
+
+	for(auto i = first; i != last; ++i)
+	{
+		PhysicsObject* obj = (*i)->GetPhysicsObject();
+		if(obj == nullptr)
+			continue;
+
+		Transform& transform = (*i)->GetTransform();
+
+		Vector3 position = transform.GetLocalPosition();
+		Vector3 linearVel = obj->GetLinearVelocity();
+		position += linearVel * dt;
+		transform.SetLocalPosition(position);
+
+		linearVel = linearVel * frameDamping;
+		obj->SetLinearVelocity(linearVel);
+
+		Quaternion orientation = transform.GetLocalOrientation();
+		Vector3 angVel = obj->GetAngularVelocity();
+
+		orientation = orientation + (Quaternion(angVel * dt * 0.5f, 0.0f) * orientation);
+		orientation.Normalise();
+
+		transform.SetLocalOrientation(orientation);
+
+		//damp the angVel
+		angVel = angVel * frameDamping;
+		obj->SetAngularVelocity(angVel);
+
+
+	}
 }
 
 /*
