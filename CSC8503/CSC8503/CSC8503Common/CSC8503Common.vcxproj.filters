@@ -126,6 +126,9 @@
     <ClInclude Include="NetworkObject.h">
       <Filter>Networking</Filter>
     </ClInclude>
+    <ClInclude Include="CapsuleVolume.h">
+      <Filter>CollisionDetection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameWorld.cpp">
