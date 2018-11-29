@@ -87,11 +87,15 @@ bool CollisionDetection::RayAABBIntersection(const Ray&r, const Transform& world
 
 bool CollisionDetection::RayOBBIntersection(const Ray&r, const Transform& worldTransform, const OBBVolume& volume, RayCollision& collision) {
 	Matrix3 invTransform = worldTransform.GetInverseWorldOrientationMat();
+	Vector3 localPos = r.GetPosition() - worldTransform.GetWorldPosition();
+
 
 	//Transform ray into objects local axis
-	Ray tempRay(invTransform * r.GetPosition(), invTransform*r.GetDirection());
+	Ray tempRay(invTransform *localPos, invTransform*r.GetDirection());
+	//Ray tempRay(invTransform * r.GetPosition(), invTransform*r.GetDirection());
 
-	bool collided = RayAABBIntersection(r, worldTransform.GetWorldPosition(), volume.GetHalfDimensions(), collision);
+	//Was worldTransform.GetWorldPos() where Vector3() is
+	bool collided = RayBoxIntersection(tempRay, Vector3(), volume.GetHalfDimensions(), collision);
 
 	if(collided)
 		collision.collidedAt = worldTransform.GetWorldMatrix() * collision.collidedAt;
@@ -124,7 +128,7 @@ bool CollisionDetection::RaySphereIntersection(const Ray&r, const Transform& wor
 	collision.collidedAt = r.GetPosition() + (r.GetDirection() * collision.rayDistance);
 
 
-	return false;
+	return true;
 }
 
 Matrix4 GenerateInverseView(const Camera &c) {
@@ -482,9 +486,33 @@ bool CollisionDetection::AABBSphereIntersection(const AABBVolume& volumeA, const
 	return false;
 }
 
+bool NCL::CollisionDetection::OBBSphereIntersection(const OBBVolume & volumeA, const Transform & worldTransformA, const SphereVolume & volumeB, const Transform & worldTransformB, CollisionInfo & collisionInfo)
+{
+
+	Matrix3 invTransform = worldTransformA.GetInverseWorldOrientationMat();
+
+	//Transform ray into objects local axis
+	//Ray tempRay(invTransform * r.GetPosition(), invTransform*r.GetDirection());
+	Transform tempTransform(invTransform * worldTransformB.GetWorldPosition());
+
+	bool collided = AABBSphereIntersection((AABBVolume&)volumeA, worldTransformA, volumeB, tempTransform, collisionInfo);
+
+	if (collided)
+		collisionInfo.point.position = worldTransformA.GetWorldMatrix() * collisionInfo.point.position;
+	//.collidedAt = worldTransform.GetWorldMatrix() * collision.collidedAt;
+
+	return collided;
+
+	return false;
+}
+
+//May never need
 bool CollisionDetection::OBBIntersection(
 	const OBBVolume& volumeA, const Transform& worldTransformA,
 	const OBBVolume& volumeB, const Transform& worldTransformB, CollisionInfo& collisionInfo) {
+
+
+
 	return false;
 }
 

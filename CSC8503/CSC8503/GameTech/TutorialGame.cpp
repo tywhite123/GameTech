@@ -161,9 +161,10 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
+	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
 	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(15, 20, 10));
-	//InitSphereGridWorld(w, 10, 10, 50.0f, 50.0f, 10.0f);
+	//InitSphereGridWorld(5, 5, 50.0f, 50.0f, 10.0f);
+	InitMixedGridWorld(5, 5, 50, 50);
 
 	//InitSphereGridWorld(w, 1, 1, 50.0f, 50.0f, 10.0f);
 	//InitCubeGridWorld(w,1, 1, 50.0f, 50.0f, Vector3(10, 10, 10));
@@ -240,7 +241,8 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass) {
 	GameObject* cube = new GameObject();
 
-	AABBVolume* volume = new AABBVolume(dimensions);
+	//AABBVolume* volume = new AABBVolume(dimensions);
+	OBBVolume* volume = new OBBVolume(dimensions);
 
 	cube->SetBoundingVolume((CollisionVolume*)volume);
 
@@ -265,6 +267,7 @@ void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacin
 			AddSphereToWorld(position, radius);
 		}
 	}
+	
 }
 
 void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
@@ -475,6 +478,7 @@ void TutorialGame::MoveSelectedObject() {
 	//Push the selected object!
 	if (Window::GetMouse()->ButtonPressed(NCL::MouseButtons::MOUSE_RIGHT)) {
 		Ray ray = CollisionDetection::BuildRayFromMouse(*world->GetMainCamera());
+		Debug::DrawLine(ray.GetPosition(), ray.GetPosition() + (ray.GetDirection() * 1000), Vector4(1, 0, 0, 1));
 
 		RayCollision closestCollision;
 		if (world->Raycast(ray, closestCollision, true)) {
