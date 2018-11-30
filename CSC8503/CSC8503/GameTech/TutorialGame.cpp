@@ -161,10 +161,10 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
+	InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
 	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(15, 20, 10));
-	//InitSphereGridWorld(5, 5, 50.0f, 50.0f, 10.0f);
-	InitMixedGridWorld(5, 5, 50, 50);
+	//InitSphereGridWorld(1, 1, 50.0f, 50.0f, 10.0f);
+	//InitMixedGridWorld(5, 5, 50, 50);
 
 	//InitSphereGridWorld(w, 1, 1, 50.0f, 50.0f, 10.0f);
 	//InitCubeGridWorld(w,1, 1, 50.0f, 50.0f, Vector3(10, 10, 10));
@@ -192,7 +192,7 @@ A single function to add a large immoveable cube to the bottom of our world
 
 */
 GameObject* TutorialGame::AddFloorToWorld(const Vector3& position) {
-	GameObject* floor = new GameObject();
+	GameObject* floor = new GameObject("Floor");
 
 	Vector3 floorSize = Vector3(1000, 10, 1000);
 	AABBVolume* volume = new AABBVolume(floorSize);
@@ -219,7 +219,7 @@ physics worlds. You'll probably need another function for the creation of OBB cu
 
 */
 GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, float inverseMass) {
-	GameObject* sphere = new GameObject();
+	GameObject* sphere = new GameObject("Sphere");
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
 	SphereVolume* volume = new SphereVolume(radius);
@@ -239,10 +239,10 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 }
 
 GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass) {
-	GameObject* cube = new GameObject();
+	GameObject* cube = new GameObject("Cube");
 
-	//AABBVolume* volume = new AABBVolume(dimensions);
-	OBBVolume* volume = new OBBVolume(dimensions);
+	AABBVolume* volume = new AABBVolume(dimensions);
+	//OBBVolume* volume = new OBBVolume(dimensions);
 
 	cube->SetBoundingVolume((CollisionVolume*)volume);
 
@@ -254,6 +254,8 @@ GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimens
 
 	cube->GetPhysicsObject()->SetInverseMass(inverseMass);
 	cube->GetPhysicsObject()->InitCubeInertia();
+
+	cube->GetPhysicsObject()->SetElasticity(1.66f);
 
 	world->AddGameObject(cube);
 
@@ -267,6 +269,7 @@ void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacin
 			AddSphereToWorld(position, radius);
 		}
 	}
+	AddFloorToWorld(Vector3(0, -100, 0));
 	
 }
 

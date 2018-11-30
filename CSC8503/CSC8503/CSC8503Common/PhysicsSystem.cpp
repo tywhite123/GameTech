@@ -152,6 +152,7 @@ void PhysicsSystem::BasicCollisionDetection() {
 			{
 				std::cout << "Collision between " << (*i)->GetName()
 					<< " and " << (*j)->GetName() << std::endl;
+				ImpulseResolveCollision(*info.a, *info.b, info.point);
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);
 			}
@@ -166,6 +167,62 @@ so that objects separate back out.
 
 */
 void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, CollisionDetection::ContactPoint& p) const {
+	//Push the objects back
+	PhysicsObject* physA = a.GetPhysicsObject();
+	PhysicsObject* physB = b.GetPhysicsObject();
+
+	Transform& transformA = a.GetTransform();
+	Transform& transformB = b.GetTransform();
+
+	float totalMass = physA->GetInverseMass() + physB->GetInverseMass();
+
+	transformA.SetWorldPosition(transformA.GetWorldPosition() -
+		(p.normal * p.penetration * (physA->GetInverseMass() / totalMass)));
+
+
+	transformB.SetWorldPosition(transformB.GetWorldPosition() +
+		(p.normal * p.penetration * (physB->GetInverseMass() / totalMass)));
+
+	//return;
+
+	////Calculate the impulse (J) variable
+	Vector3 relativeA = p.position - transformA.GetWorldPosition();
+	Vector3 relativeB = p.position - transformB.GetWorldPosition();
+
+	Vector3 angVelA = Vector3::Cross(physA->GetAngularVelocity(), relativeA);
+	Vector3 angVelB = Vector3::Cross(physB->GetAngularVelocity(), relativeB);
+
+	Vector3 fullVelocityA = physA->GetLinearVelocity() + angVelA;
+	Vector3 fullVelocityB = physB->GetLinearVelocity() + angVelB;
+
+	Vector3 contactVelocity = fullVelocityB - fullVelocityA;
+
+	float impulseForce = Vector3::Dot(contactVelocity, p.normal);
+
+	//Inertia Calculations
+	Vector3 inertiaA = Vector3::Cross(physA->GetInertiaTensor() * Vector3::Cross(relativeA, p.normal), relativeA);
+	Vector3 inertiaB = Vector3::Cross(physB->GetInertiaTensor() * Vector3::Cross(relativeB, p.normal), relativeB);
+
+	float angularEffect = Vector3::Dot(inertiaA + inertiaB, p.normal);
+
+	//float cRestitution = 1.66f; //disperses kinetic energy and can be used to change the elasticity;
+	float cRestitution = physA->GetElasticity() * physB->GetElasticity();
+
+	float j = (-(1.0f + cRestitution) * impulseForce) / (totalMass + angularEffect);
+	Vector3 fullImpulse = p.normal*j;
+
+
+	//fullImpulse *= 0.001f;
+	//Apply the impulse to the physics objects
+	physA->ApplyLinearImpulse(-fullImpulse);
+	physB->ApplyLinearImpulse(fullImpulse);
+
+	if(a.GetBoundingVolume()->type != VolumeType::AABB)
+		physA->ApplyAngularImpulse(Vector3::Cross(relativeA, -fullImpulse));
+
+	if (b.GetBoundingVolume()->type != VolumeType::AABB)
+		physB->ApplyAngularImpulse(Vector3::Cross(relativeB, fullImpulse));
+
 
 }
 
@@ -233,7 +290,8 @@ void PhysicsSystem::IntegrateAccel(float dt) {
 		Vector3 angAccel = obj->GetInertiaTensor() * torque;
 
 		angVel += angAccel * dt;
-		obj->SetAngularVelocity(angVel);
+		if ((*i)->GetBoundingVolume()->type != VolumeType::AABB)
+			obj->SetAngularVelocity(angVel);
 
 
 	}
@@ -280,7 +338,8 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
 
 		//damp the angVel
 		angVel = angVel * frameDamping;
-		obj->SetAngularVelocity(angVel);
+		if ((*i)->GetBoundingVolume()->type != VolumeType::AABB)
+			obj->SetAngularVelocity(angVel);
 
 
 	}

@@ -40,6 +40,7 @@ void Transform::SetWorldPosition(const Vector3& worldPos) {
 		localMatrix.SetPositionVector(posDiff);
 	}
 	else {
+		worldMatrix.SetPositionVector(worldPos);
 		localPosition = worldPos;
 	}
 }
