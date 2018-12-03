@@ -162,11 +162,11 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	LoadLevel("TestLevel1.txt");
+	//LoadLevel("TestLevel2.txt");
 
-	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
+	InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
 	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(15, 20, 10));
-	//InitSphereGridWorld(1, 1, 50.0f, 50.0f, 10.0f);
+	//InitSphereGridWorld(2, 1, 50.0f, 50.0f, 10.0f);
 	//InitMixedGridWorld(5, 5, 50, 50);
 
 	//InitSphereGridWorld(w, 1, 1, 50.0f, 50.0f, 10.0f);
@@ -440,8 +440,6 @@ void TutorialGame::LoadLevel(std::string filename)
 
 	if (file.is_open())
 	{
-		
-
 		string line;
 		while (getline(file, line)) {
 			if(std::regex_match(line, std::regex("[0-9]+")))
@@ -468,12 +466,10 @@ void TutorialGame::LoadLevel(std::string filename)
 					else if (in == 'S')
 					{
 						AddSphereToWorld(pos, cubeDims.x * 0.5f, 10.0f);
-						//BALL START POS;
 					}
 					else if (in == 'E')
 					{
 						AddCubeToWorld(pos, cubeDims*0.5f, 0);
-						//END GOAL
 					}
 					width++;
 				}
@@ -484,7 +480,7 @@ void TutorialGame::LoadLevel(std::string filename)
 		}
 	}
 	file.close();
-	AddFloorToWorld(Vector3(0, -20, 0));
+	AddFloorToWorld(Vector3(0, -(cubeDims.y*2), 0));
 
 }
 

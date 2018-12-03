@@ -11,6 +11,7 @@
 
 #include "TutorialGame.h"
 #include "NetworkedGame.h"
+#include "GolfGame.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -30,7 +31,7 @@ void TestStateMachine() {
 	{
 		int* realData = (int*)data;
 		(*realData)--;
-		std::cout << "In State B!" << std::endl;
+		std::cout << "	In State B!" << std::endl;
 	};
 
 	GenericState* stateA = new GenericState(AFunc, (void*)&someData);
@@ -96,7 +97,8 @@ int main() {
 	w->ShowOSPointer(false);
 	w->LockMouseToWindow(true);
 
-	TutorialGame* g = new TutorialGame();
+	//TutorialGame* g = new TutorialGame();
+	GolfGame* g = new GolfGame();
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)) {
 		float dt = w->GetTimer()->GetTimeDelta() / 1000.0f;
