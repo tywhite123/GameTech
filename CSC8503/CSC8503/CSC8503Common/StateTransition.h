@@ -45,7 +45,8 @@ namespace NCL {
 			}
 
 			State* GetDestinationState()  const {
-				return incomingState;
+				//return incomingState;
+				return destinationState;
 			}
 
 			static bool GreaterThanTransition(T dataA, U dataB) {

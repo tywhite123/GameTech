@@ -494,7 +494,7 @@ bool CollisionDetection::AABBSphereIntersection(const AABBVolume& volumeA, const
 
 	if(dist < volumeB.GetRadius())
 	{
-		collisionInfo.AddContactPoint(closestPointOnBox, dist == 0.0f ? delta.Normalised() : localPoint.Normalised(), volumeB.GetRadius() - dist);
+		collisionInfo.AddContactPoint(closestPointOnBox + worldTransformA.GetWorldPosition(), dist == 0.0f ? delta.Normalised() : localPoint.Normalised(), volumeB.GetRadius() - dist);
 		return true;
 	}
 	return false;

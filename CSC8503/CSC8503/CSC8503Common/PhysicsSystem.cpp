@@ -19,15 +19,18 @@ and the forces that are added to objects to change those positions
 
 */
 
-const float PhysicsSystem::UNIT_MULTIPLIER = 100.0f;
-const float PhysicsSystem::UNIT_RECIPROCAL = 1.0f / UNIT_MULTIPLIER;
+//const float PhysicsSystem::UNIT_MULTIPLIER = 100.0f;
+//const float PhysicsSystem::UNIT_RECIPROCAL = 1.0f / UNIT_MULTIPLIER;
+const float PhysicsSystem::UNIT_MULTIPLIER = 1.0f;
+const float PhysicsSystem::UNIT_RECIPROCAL = 1.0f;
 
 PhysicsSystem::PhysicsSystem(GameWorld& g) : gameWorld(g)	{
 	applyGravity	= false;
 	useBroadPhase	= false;	
 	dTOffset		= 0.0f;
 	globalDamping	= 0.95f;
-	SetGravity(Vector3(0.0f, -9.8f, 0.0f));
+	//SetGravity(Vector3(0.0f, -9.8f, 0.0f));
+	SetGravity(Vector3(0.0f, -980.0f, 0.0f));
 }
 
 PhysicsSystem::~PhysicsSystem()	{
@@ -150,8 +153,8 @@ void PhysicsSystem::BasicCollisionDetection() {
 
 			if(CollisionDetection::ObjectIntersection(*i, *j, info))
 			{
-				std::cout << "Collision between " << (*i)->GetName()
-					<< " and " << (*j)->GetName() << std::endl;
+				/*std::cout << "Collision between " << (*i)->GetName()
+					<< " and " << (*j)->GetName() << std::endl;*/
 				ImpulseResolveCollision(*info.a, *info.b, info.point);
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);
@@ -176,6 +179,9 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
 	float totalMass = physA->GetInverseMass() + physB->GetInverseMass();
 
+	if (totalMass == 0.0f)
+		return;
+
 	transformA.SetWorldPosition(transformA.GetWorldPosition() -
 		(p.normal * p.penetration * (physA->GetInverseMass() / totalMass)));
 
@@ -196,6 +202,9 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 	Vector3 fullVelocityB = physB->GetLinearVelocity() + angVelB;
 
 	Vector3 contactVelocity = fullVelocityB - fullVelocityA;
+
+	if (Vector3::Dot(contactVelocity, p.normal) > 0)
+		return;
 
 	float impulseForce = Vector3::Dot(contactVelocity, p.normal);
 

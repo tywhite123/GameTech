@@ -1,6 +1,8 @@
 #pragma once
 #include "GameTechRenderer.h"
 #include "../CSC8503Common/PhysicsSystem.h"
+#include <string>
+#include <fstream>
 
 
 namespace NCL {
@@ -36,6 +38,8 @@ namespace NCL {
 			void SimpleGJKTest();
 			void SimpleAABBTest();
 			void SimpleAABBTest2();
+
+			void LoadLevel(std::string file);
 
 			bool SelectObject();
 			void MoveSelectedObject();

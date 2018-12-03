@@ -6,6 +6,7 @@
 #include "../../Common/TextureLoader.h"
 
 #include "../CSC8503Common/PositionConstraint.h"
+#include <regex>
 
 using namespace NCL;
 using namespace CSC8503;
@@ -161,7 +162,9 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
+	LoadLevel("TestLevel1.txt");
+
+	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
 	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(15, 20, 10));
 	//InitSphereGridWorld(1, 1, 50.0f, 50.0f, 10.0f);
 	//InitMixedGridWorld(5, 5, 50, 50);
@@ -232,6 +235,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 	sphere->GetPhysicsObject()->SetInverseMass(inverseMass);
 	sphere->GetPhysicsObject()->InitSphereInertia();
+	sphere->GetPhysicsObject()->SetElasticity(0.66f);
 
 	world->AddGameObject(sphere);
 
@@ -413,6 +417,75 @@ void TutorialGame::SimpleAABBTest2() {
 
 	GameObject* newFloor	= AddCubeToWorld(Vector3(0, 0, 0), floorDimensions, 0.0f);
 	GameObject* fallingCube = AddCubeToWorld(Vector3(8, 20, 0), dimensions, 10.0f);
+}
+
+
+
+/**
+ *	Level File Format Key:
+ *	S - Ball Start
+ *	E - End/Goal
+ *	x - Wall Cube
+ *	. - Empty Space
+ *	
+ */
+void TutorialGame::LoadLevel(std::string filename)
+{
+	std::ifstream file("../../Assets/Data/" + filename);
+	int width = 0;
+	int depth = 0;
+	int x, y, z;
+	Vector3 cubeDims;
+	int i = 0;
+
+	if (file.is_open())
+	{
+		
+
+		string line;
+		while (getline(file, line)) {
+			if(std::regex_match(line, std::regex("[0-9]+")))
+			{
+				switch (i)
+				{
+				case 0: x = stoi(line); break;
+				case 1: y = stoi(line); break;
+				case 2: 
+					z = stoi(line);
+					cubeDims = Vector3(x, y, z);
+					break;
+				}
+				i++;
+			}
+			else
+			{
+				for (char& in : line) {
+					Vector3 pos(width*(cubeDims.x * 2), 0, depth*(cubeDims.z * 2));
+					if (in == 'x')
+					{
+						AddCubeToWorld(pos, cubeDims, 0);
+					}
+					else if (in == 'S')
+					{
+						AddSphereToWorld(pos, cubeDims.x * 0.5f, 10.0f);
+						//BALL START POS;
+					}
+					else if (in == 'E')
+					{
+						AddCubeToWorld(pos, cubeDims*0.5f, 0);
+						//END GOAL
+					}
+					width++;
+				}
+				depth++;
+				width = 0;
+			}
+			
+		}
+	}
+	file.close();
+	AddFloorToWorld(Vector3(0, -20, 0));
+
 }
 
 /*
