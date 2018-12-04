@@ -157,9 +157,9 @@ int main() {
 	if (!w->HasInitialised()) {
 		return -1;
 	}	
-	TestStateMachine();
-	TestNetworking();
-	TestPathfinding();
+	//TestStateMachine();
+	//TestNetworking();
+	//TestPathfinding();
 	
 	w->ShowOSPointer(false);
 	w->LockMouseToWindow(true);
@@ -180,9 +180,9 @@ int main() {
 			w->ShowConsole(false);
 		}
 
-		DisplayPathfinding();
+		//DisplayPathfinding();
 
-		w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
+		//w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
 		g->UpdateGame(dt);
 	}

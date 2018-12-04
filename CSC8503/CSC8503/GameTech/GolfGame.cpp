@@ -61,6 +61,8 @@ void GolfGame::InitialiseAssets()
 
 void GolfGame::UpdateGame(float dt)
 {
+	Debug::Print("Render Time: " + std::to_string(1000.0f*dt), Vector2(10, 720-60));
+
 	if (!inSelectionMode) {
 		world->GetMainCamera()->UpdateCamera(dt);
 	}
