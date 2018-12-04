@@ -24,6 +24,8 @@ namespace NCL {
 
 			void BroadcastSnapshot(bool deltaFrame);
 			void UpdateMinimumState();
+			
+			virtual void UpdateServer();
 
 		protected:
 			int			port;
@@ -33,7 +35,7 @@ namespace NCL {
 
 			std::atomic<bool> threadAlive;
 
-			virtual void UpdateServer();
+			
 
 			std::thread updateThread;
 
