@@ -70,7 +70,7 @@ public:
 		{
 			StringPacket* realPacket = (StringPacket*)payload;
 			string msg = realPacket->GetStringFromData();
-			std::cout << msg << std::endl;
+			std::cout << name << " received message: " << msg << std::endl;
 		}
 	}
 
