@@ -3,6 +3,7 @@
 #include "../CSC8503Common/PhysicsSystem.h"
 #include <string>
 #include <fstream>
+#include "../CSC8503Common/PlayerObject.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -49,6 +50,8 @@ namespace NCL {
 			OGLMesh*	sphereMesh = nullptr;
 			OGLTexture* basicTex = nullptr;
 			OGLShader*	basicShader = nullptr;
+
+			Level* level;
 
 		};
 	}

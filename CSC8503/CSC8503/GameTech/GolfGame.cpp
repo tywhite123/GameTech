@@ -10,6 +10,8 @@
 #include "../CSC8503Common/PlayerObject.h"
 
 
+Level* Level::instance = 0;
+
 GolfGame::GolfGame()
 {
 	world = new GameWorld();
@@ -21,8 +23,10 @@ GolfGame::GolfGame()
 	inSelectionMode = false;
 
 	Debug::SetRenderer(renderer);
-
+	level = Level::GetInstance();
 	InitialiseAssets();
+
+	
 }
 
 
@@ -78,12 +82,34 @@ void GolfGame::UpdateGame(float dt)
 	physics->Update(dt);
 
 
+	if (level->loadNext) {
+		InitWorld();
+		level->loadNext = false;
+	}
+		//Debug::Print("Level Finished", Vector2(1280 / 3, 720 / 2), Vector4(1, 1, 1, 1));
+
 	Debug::FlushRenderables();
 	renderer->Render();
 }
 
 void GolfGame::UpdateKeys()
 {
+
+	if(Window::GetMouse()->ButtonHeld(MOUSE_MIDDLE))
+	{
+		inSelectionMode = false;
+		Window::GetWindow()->ShowOSPointer(false);
+		Window::GetWindow()->LockMouseToWindow(true);
+		
+	}
+	else {
+		inSelectionMode = true;
+		Window::GetWindow()->ShowOSPointer(true);
+		Window::GetWindow()->LockMouseToWindow(false);
+		
+	}
+
+
 	if (Window::GetKeyboard()->KeyPressed(KEYBOARD_F1)) {
 		InitWorld(); //We can reset the simulation at any time with F1
 		selectionObject = nullptr;
@@ -97,6 +123,8 @@ void GolfGame::UpdateKeys()
 		useGravity = !useGravity; //Toggle gravity!
 		physics->UseGravity(useGravity);
 	}
+
+
 	//Running certain physics updates in a consistent order might cause some
 	//bias in the calculations - the same objects might keep 'winning' the constraint
 	//allowing the other one to stretch too much etc. Shuffling the order so that it
@@ -114,6 +142,8 @@ void GolfGame::UpdateKeys()
 	if (Window::GetKeyboard()->KeyPressed(KEYBOARD_F8)) {
 		world->ShuffleObjects(false);
 	}
+
+	//TODO: Remove this stuff later on
 	//If we've selected an object, we can manipulate it with some key presses
 	if (inSelectionMode && selectionObject) {
 		//Twist the selected object!
@@ -161,7 +191,9 @@ void GolfGame::InitWorld()
 	world->ClearAndErase();
 	physics->Clear();
 
-	LoadLevel("TestLevel2.txt");
+	LoadLevel("TestLevel" + std::to_string(level->GetLevel()) + ".txt");
+
+
 }
 
 
@@ -210,6 +242,7 @@ void GolfGame::LoadLevel(std::string filename)
 					else if (in == 'S')
 					{
 						AddPlayerToWorld(pos, cubeDims.x * 0.5f, 10.0f);
+						
 					}
 					else if (in == 'E')
 					{
@@ -224,7 +257,7 @@ void GolfGame::LoadLevel(std::string filename)
 		}
 	}
 	file.close();
-	AddFloorToWorld(Vector3(0, -(cubeDims.y * 2), 0));
+	AddFloorToWorld(Vector3(0, -(cubeDims.y * 2)/*-cubeDims.y*/, 0));
 }
 
 bool GolfGame::SelectObject()
@@ -306,7 +339,7 @@ void GolfGame::SetPlayer(GameObject * player)
 
 GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, float inverseMass)
 {
-	GameObject* player = new PlayerObject("Player");
+	PlayerObject* player = new PlayerObject("Player");
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
 	SphereVolume* volume = new SphereVolume(radius);
@@ -320,8 +353,9 @@ GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, f
 	player->GetPhysicsObject()->SetInverseMass(inverseMass);
 	player->GetPhysicsObject()->InitSphereInertia();
 	player->GetPhysicsObject()->SetElasticity(0.66f);
+	player->level = level;
 
-	world->AddGameObject(player);
+	world->AddGameObject((GameObject*)player);
 	SetPlayer(player);
 
 	return player;
@@ -371,6 +405,7 @@ GameObject* GolfGame::AddGoalToWorld(const Vector3 & position, Vector3 dimension
 	goal->GetPhysicsObject()->InitCubeInertia();
 
 	goal->GetPhysicsObject()->SetElasticity(1.66f);
+	goal->GetPhysicsObject()->SetPhysical(false);
 
 	world->AddGameObject(goal);
 

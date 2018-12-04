@@ -71,6 +71,9 @@ namespace NCL {
 			void SetElasticity(const float e) { elasticity = e; }
 			float GetElasticity() const { return elasticity; }
 
+			void SetPhysical(bool b) { isPhysical = b; }
+			bool GetPhysical() { return isPhysical; }
+
 		protected:
 			const CollisionVolume* volume;
 			Transform*		transform;
@@ -78,6 +81,8 @@ namespace NCL {
 			float inverseMass;
 			float elasticity;
 			float friction;
+
+			bool isPhysical = true;
 
 			//linear stuff
 			Vector3 linearVelocity;

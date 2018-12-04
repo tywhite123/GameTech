@@ -76,17 +76,121 @@ NavigationGrid::~NavigationGrid()	{
 }
 
 bool NavigationGrid::FindPath(const Vector3& from, const Vector3& to, NavigationPath& outPath) {
+	
+	//need to work out which node from is in and to is in
+	int fromX = (from.x / nodeSize);
+	int fromZ = (from.z / nodeSize);
+
+	int toX = (to.x / nodeSize);
+	int toZ = (to.z / nodeSize);
+
+	if (fromX < 0 || fromX > gridWidth - 1 || fromZ < 0 || fromZ > gridHeight - 1)
+		return false; //outside map
+
+	if (toX < 0 || toX > gridWidth - 1 || toZ < 0 || toZ > gridHeight - 1)
+		return false; //outside map
+	
+	
+	GridNode* startNode = &allNodes[(fromZ * gridWidth) + fromX];
+	GridNode* endNode = &allNodes[(toZ * gridWidth) + toX];
+
+	std::vector<GridNode*> openList;
+	std::vector<GridNode*> closedList;
+
+	openList.emplace_back(startNode);
+
+	//Set up the starting node
+	startNode->f = 0;
+	startNode->g = 0;
+	startNode->parent = nullptr;
+
+	GridNode* currentBestNode = nullptr;
+
+	//A* algorithm starts here
+	while(!openList.empty())
+	{
+		//Remove the best node from the open list
+		currentBestNode = RemoveBestNode(openList);
+
+		//Check if the current node is the end one and then add it to the outpath
+		if(currentBestNode == endNode)
+		{
+			GridNode* node = endNode;
+			while(node != nullptr)
+			{
+				outPath.PushWaypoint(node->position);
+				node = node->parent;
+			}
+			return true;
+		}
+		else
+		{
+			for(int i = 0; i < 4; ++i)
+			{
+				GridNode* neighbour = currentBestNode->connected[i];
+				if(!neighbour)
+					continue;
+
+				//Check if the node is already in the closed list
+				bool inClosed = NodeInList(neighbour, closedList);
+				if(inClosed)
+					continue;
+
+				//Get the f cost
+				float h = Heuristic(neighbour, endNode);
+				float g = currentBestNode->g + currentBestNode->costs[i];
+				float f = h + g;
+
+				//Check if the node is already in the open list
+				bool inOpen = NodeInList(neighbour, openList);
+				if (!inOpen)
+					openList.emplace_back(neighbour);
+
+
+				//Check if it is a better path
+				if(!inOpen || f < neighbour->f)
+				{
+					neighbour->parent = currentBestNode;
+					neighbour->f = f;
+					neighbour->g = g;
+				}
+			}
+
+			closedList.emplace_back(currentBestNode);
+
+		}
+	}
+	
+
+	
+	
 	return false; //open list emptied out with no path!
 }
 
 bool NavigationGrid::NodeInList(GridNode* n, std::vector<GridNode*>& list) const {
-	return false;
+	//Finds the node in the list?
+	std::vector<GridNode*>::iterator i = std::find(list.begin(), list.end(), n);
+	return i == list.end() ? false : true;
 }
 
 GridNode*  NavigationGrid::RemoveBestNode(std::vector<GridNode*>& list) const {
-	return nullptr;
+	
+	//Get the best node and remove it from the open list
+	std::vector<GridNode*>::iterator bestI = list.begin();
+	GridNode* bestNode = *list.begin();
+
+	for(auto i = list.begin(); i != list.end(); ++i)
+	{
+		if((*i)->f < bestNode->f)
+		{
+			bestNode = (*i);
+			bestI = i;
+		}
+	}
+	list.erase(bestI);
+	return bestNode;
 }
 
 float NavigationGrid::Heuristic(GridNode* hNode, GridNode* endNode) const {
-	return 0.0f;
+	return (hNode->position - endNode->position).Length();
 }

@@ -91,6 +91,8 @@ protected:
 	NetworkBase();
 	~NetworkBase();
 
+	bool ProcessPacket(GamePacket* packet, int peerID = -1);
+
 	typedef std::multimap<int, PacketReceiver*>::const_iterator PacketHandlerIterator;
 
 	bool GetPackethandlers(int msgID, PacketHandlerIterator& first, PacketHandlerIterator& last) const {
