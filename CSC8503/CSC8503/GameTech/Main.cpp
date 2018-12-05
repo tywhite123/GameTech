@@ -64,6 +64,8 @@ public:
 		this->name = name;
 	}
 
+	string GetName() { return name; }
+
 	void ReceivePacket(int type, GamePacket* payload, int source) override
 	{
 		if(type == String)
@@ -81,8 +83,12 @@ protected:
 void TestNetworking() {
 	NetworkBase::Initialise();
 
+	string name;
+	std::cout << "Please Enter a Username: ";
+	std::cin >> name;
+
 	TestPacketReceiver serverReceiver("Server");
-	TestPacketReceiver clientReceiver("Client");
+	TestPacketReceiver clientReceiver(name);
 
 	int port = NetworkBase::GetDefaultPort();
 
@@ -97,7 +103,7 @@ void TestNetworking() {
 	for(int i = 0; i < 100; ++i)
 	{
 		server->SendGlobalMessage(StringPacket("Server says hello! " + std::to_string(i)));
-		client->SendPacket(StringPacket("Client says hello! " + std::to_string(i)));
+		client->SendPacket(StringPacket(clientReceiver.GetName() + " says ey up! " + std::to_string(i)));
 
 		server->UpdateServer();
 		client->UpdateClient();
@@ -165,7 +171,9 @@ int main() {
 	w->LockMouseToWindow(true);
 
 	//TutorialGame* g = new TutorialGame();
+	//NetworkGame* n = new NetworkGame();
 	GolfGame* g = new GolfGame();
+	
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)) {
 		float dt = w->GetTimer()->GetTimeDelta() / 1000.0f;
@@ -184,7 +192,10 @@ int main() {
 
 		//w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
+		//n->UpdateServer();
 		g->UpdateGame(dt);
+		
 	}
 	Window::DestroyGameWindow();
 }
+

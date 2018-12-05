@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ServerSide">
+      <UniqueIdentifier>{38cdb72e-cc11-43d8-8620-edca2e704e69}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -24,14 +27,17 @@
     <ClCompile Include="TutorialGame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NetworkedGame.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NetworkPlayer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GolfGame.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PacketReceivers.cpp">
+      <Filter>ServerSide</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkPlayer.cpp">
+      <Filter>ServerSide</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkedGame.cpp">
+      <Filter>ServerSide</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -41,14 +47,17 @@
     <ClInclude Include="TutorialGame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NetworkedGame.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkPlayer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GolfGame.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketReceivers.h">
+      <Filter>ServerSide</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkPlayer.h">
+      <Filter>ServerSide</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkedGame.h">
+      <Filter>ServerSide</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

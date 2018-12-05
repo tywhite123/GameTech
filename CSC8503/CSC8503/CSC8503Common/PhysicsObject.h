@@ -74,6 +74,9 @@ namespace NCL {
 			void SetPhysical(bool b) { isPhysical = b; }
 			bool GetPhysical() { return isPhysical; }
 
+			void SetCanImpulse(bool b) { canReceiveImpulse = b; }
+			bool GetCanImpulse() { return canReceiveImpulse; }
+
 		protected:
 			const CollisionVolume* volume;
 			Transform*		transform;
@@ -83,6 +86,7 @@ namespace NCL {
 			float friction;
 
 			bool isPhysical = true;
+			bool canReceiveImpulse = true;
 
 			//linear stuff
 			Vector3 linearVelocity;

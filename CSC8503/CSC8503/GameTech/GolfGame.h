@@ -4,6 +4,8 @@
 #include <string>
 #include <fstream>
 #include "../CSC8503Common/PlayerObject.h"
+#include "../CSC8503Common/GameClient.h"
+#include "PacketReceivers.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -17,6 +19,7 @@ namespace NCL {
 
 		protected:
 			void InitialiseAssets();
+			void InitialiseNetwork();
 
 			void InitCamera();
 			void UpdateKeys();
@@ -52,6 +55,14 @@ namespace NCL {
 			OGLShader*	basicShader = nullptr;
 
 			Level* level;
+
+			GameClient* client;
+			bool connected;
+			bool printed = false;
+			PacketReceivers clientReceiver;
+
+			string playerName;
+			int playerPushes;
 
 		};
 	}

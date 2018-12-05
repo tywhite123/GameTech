@@ -227,13 +227,15 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
 	//fullImpulse *= 0.001f;
 	//Apply the impulse to the physics objects
-	physA->ApplyLinearImpulse(-fullImpulse);
-	physB->ApplyLinearImpulse(fullImpulse);
+	if(a.GetPhysicsObject()->GetCanImpulse())
+		physA->ApplyLinearImpulse(-fullImpulse);
+	if(b.GetPhysicsObject()->GetCanImpulse())
+		physB->ApplyLinearImpulse(fullImpulse);
 
-	if(a.GetBoundingVolume()->type != VolumeType::AABB)
+	if(a.GetBoundingVolume()->type != VolumeType::AABB || a.GetPhysicsObject()->GetCanImpulse())
 		physA->ApplyAngularImpulse(Vector3::Cross(relativeA, -fullImpulse));
 
-	if (b.GetBoundingVolume()->type != VolumeType::AABB)
+	if (b.GetBoundingVolume()->type != VolumeType::AABB || b.GetPhysicsObject()->GetCanImpulse())
 		physB->ApplyAngularImpulse(Vector3::Cross(relativeB, fullImpulse));
 
 

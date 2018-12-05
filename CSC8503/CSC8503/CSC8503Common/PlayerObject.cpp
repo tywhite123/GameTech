@@ -13,7 +13,9 @@ PlayerObject::~PlayerObject()
 void PlayerObject::OnCollisionBegin(GameObject * otherObject)
 {
 	if (otherObject->GetName() == "Goal") {
-		level->loadNext = true;
-		level->SetLevel(level->GetLevel()+1);
+		if (!level->loadNext) {
+			level->loadNext = true;
+			level->SetLevel(level->GetLevel() + 1);
+		}
 	}
 }

@@ -8,7 +8,7 @@
 #include "../CSC8503Common/PositionConstraint.h"
 #include <regex>
 #include "../CSC8503Common/PlayerObject.h"
-
+#include "PacketReceivers.h"
 
 Level* Level::instance = 0;
 
@@ -21,12 +21,14 @@ GolfGame::GolfGame()
 	forceMagnitude = 10.0f;
 	useGravity = false;
 	inSelectionMode = false;
+	playerPushes = 0;
+
 
 	Debug::SetRenderer(renderer);
 	level = Level::GetInstance();
 	InitialiseAssets();
-
-	
+	InitialiseNetwork();
+ 
 }
 
 
@@ -40,6 +42,8 @@ GolfGame::~GolfGame()
 	delete physics;
 	delete renderer;
 	delete world;
+
+	NetworkBase::Destroy();
 }
 
 void GolfGame::InitialiseAssets()
@@ -59,9 +63,31 @@ void GolfGame::InitialiseAssets()
 	InitWorld();
 }
 
+void GolfGame::InitialiseNetwork()
+{
+	NetworkBase::Initialise();
+
+	string name;
+	std::cout << "Please Enter your username: ";
+	std::cin >> name;
+
+	playerName = name;
+
+	int port = NetworkBase::GetDefaultPort();
+
+	client = new GameClient();
+	clientReceiver = PacketReceivers(name);
+
+	client->RegisterPacketHandler(String, &clientReceiver);
+
+	connected = client->Connect(127, 0, 0, 1, port);
+
+}
+
 void GolfGame::UpdateGame(float dt)
 {
 	Debug::Print("Render Time: " + std::to_string(1000.0f*dt), Vector2(10, 720-60));
+	Debug::Print("Score: " + std::to_string(playerPushes) + "!", Vector2(10, 720 - 100), Vector4(1, 1, 1, 1));
 
 	if (!inSelectionMode) {
 		world->GetMainCamera()->UpdateCamera(dt);
@@ -85,10 +111,26 @@ void GolfGame::UpdateGame(float dt)
 
 
 	if (level->loadNext) {
-		InitWorld();
-		level->loadNext = false;
+		Debug::Print("Level Finished", Vector2(1280 / 3, 720 / 2), Vector4(1, 1, 1, 1));
+		Debug::Print("Press Enter to Load Next Level!", Vector2(1280 / 6, (720 / 2)-40), Vector4(1, 1, 1, 1));
+		Debug::Print("Score: " + std::to_string(playerPushes) +  "!", Vector2(1280 / 3, (720 / 2) - 80), Vector4(1, 1, 1, 1));
+		//printed = false;
+		
 	}
-		//Debug::Print("Level Finished", Vector2(1280 / 3, 720 / 2), Vector4(1, 1, 1, 1));
+
+
+
+	if(connected)
+	{
+
+		if (level->loadNext && !printed) {
+			client->SendPacket(StringPacket(playerName + " finished the level"));
+			client->SendPacket(StringPacket(playerName + "'s Score was " + std::to_string(playerPushes)));
+			printed = true;
+
+		}
+		client->UpdateClient();
+	}
 
 	Debug::FlushRenderables();
 	renderer->Render();
@@ -177,6 +219,16 @@ void GolfGame::UpdateKeys()
 			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 100));
 		}
 	}
+
+	if (level->loadNext)
+	{
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_RETURN))
+		{
+			InitWorld();
+			level->loadNext = false;
+		}
+	}
+
 }
 
 void GolfGame::InitCamera()
@@ -250,6 +302,10 @@ void GolfGame::LoadLevel(std::string filename)
 					{
 						AddGoalToWorld(pos, cubeDims*0.5f, 0);
 					}
+					else if(in == 'm')
+					{
+						AddGoalToWorld(pos, cubeDims*0.5f, 1.f);
+					}
 					width++;
 				}
 				depth++;
@@ -321,6 +377,8 @@ void GolfGame::MoveSelectedObject()
 		if (world->Raycast(ray, closestCollision, true)) {
 			if (closestCollision.node == selectionObject) {
 				selectionObject->GetPhysicsObject()->AddForceAtPosition(ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
+				if(selectionObject->GetName() == "Player")
+					playerPushes++;
 			}
 		}
 	}
@@ -355,6 +413,7 @@ GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, f
 	player->GetPhysicsObject()->SetInverseMass(inverseMass);
 	player->GetPhysicsObject()->InitSphereInertia();
 	player->GetPhysicsObject()->SetElasticity(0.66f);
+	player->GetPhysicsObject()->SetCanImpulse(true);
 	player->level = level;
 
 	world->AddGameObject((GameObject*)player);
@@ -382,6 +441,7 @@ GameObject* GolfGame::AddWallToWorld(const Vector3 & position, Vector3 dimension
 	wall->GetPhysicsObject()->InitCubeInertia();
 
 	wall->GetPhysicsObject()->SetElasticity(1.66f);
+	wall->GetPhysicsObject()->SetCanImpulse(false);
 
 	world->AddGameObject(wall);
 
