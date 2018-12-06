@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 
 namespace NCL {
 	namespace CSC8503 {

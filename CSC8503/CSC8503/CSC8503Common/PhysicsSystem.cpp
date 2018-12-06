@@ -189,7 +189,6 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 	transformA.SetWorldPosition(transformA.GetWorldPosition() -
 		(p.normal * p.penetration * (physA->GetInverseMass() / totalMass)));
 
-
 	transformB.SetWorldPosition(transformB.GetWorldPosition() +
 		(p.normal * p.penetration * (physB->GetInverseMass() / totalMass)));
 
@@ -289,7 +288,7 @@ void PhysicsSystem::IntegrateAccel(float dt) {
 		Vector3 force = obj->GetForce();
 		Vector3 accel = force * inverseMass;
 
-		if (applyGravity && inverseMass > 0)
+		if ((applyGravity && obj->GetAffectedByGrav()) && inverseMass > 0)
 			accel += gravity; //don't move infinitely heavy things
 
 		linearVel += accel * dt;

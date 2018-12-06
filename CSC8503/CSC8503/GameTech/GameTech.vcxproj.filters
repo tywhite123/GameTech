@@ -16,6 +16,9 @@
     <Filter Include="ServerSide">
       <UniqueIdentifier>{38cdb72e-cc11-43d8-8620-edca2e704e69}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game Related Objects">
+      <UniqueIdentifier>{915f12e6-f678-4c48-af7d-625a02692a23}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -39,6 +42,9 @@
     <ClCompile Include="NetworkedGame.cpp">
       <Filter>ServerSide</Filter>
     </ClCompile>
+    <ClCompile Include="MovingWallObject.cpp">
+      <Filter>Game Related Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameTechRenderer.h">
@@ -58,6 +64,9 @@
     </ClInclude>
     <ClInclude Include="NetworkedGame.h">
       <Filter>ServerSide</Filter>
+    </ClInclude>
+    <ClInclude Include="MovingWallObject.h">
+      <Filter>Game Related Objects</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

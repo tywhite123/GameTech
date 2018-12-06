@@ -77,6 +77,9 @@ namespace NCL {
 			void SetCanImpulse(bool b) { canReceiveImpulse = b; }
 			bool GetCanImpulse() { return canReceiveImpulse; }
 
+			void SetAffectedByGrav(bool b) { isAffectedByGravity = b; }
+			bool GetAffectedByGrav() { return isAffectedByGravity; }
+
 		protected:
 			const CollisionVolume* volume;
 			Transform*		transform;
@@ -87,6 +90,7 @@ namespace NCL {
 
 			bool isPhysical = true;
 			bool canReceiveImpulse = true;
+			bool isAffectedByGravity = true;
 
 			//linear stuff
 			Vector3 linearVelocity;

@@ -6,6 +6,7 @@
 #include "../CSC8503Common/PlayerObject.h"
 #include "../CSC8503Common/GameClient.h"
 #include "PacketReceivers.h"
+#include "../CSC8503Common/StateMachine.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -36,6 +37,7 @@ namespace NCL {
 			GameObject* AddPlayerToWorld(const Vector3& position, float radius, float inverseMass = 10.0f);
 			GameObject* AddWallToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
 			GameObject* AddGoalToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+			GameObject* AddMovingToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
 			GameObject* AddFloorToWorld(const Vector3& position);
 
 			GameTechRenderer*	renderer;
@@ -64,6 +66,7 @@ namespace NCL {
 			string playerName;
 			int playerPushes;
 
+			vector<StateMachine*> stateMachines;
 		};
 	}
 }

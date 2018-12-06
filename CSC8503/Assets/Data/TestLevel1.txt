@@ -9,5 +9,5 @@ x........x
 xxxxxx...x
 x......xxx
 x..xxxxxxx
-x.......Sx
+x.m.....Sx
 xxxxxxxxxx

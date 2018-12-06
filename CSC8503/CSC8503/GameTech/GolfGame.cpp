@@ -9,6 +9,8 @@
 #include <regex>
 #include "../CSC8503Common/PlayerObject.h"
 #include "PacketReceivers.h"
+#include "MovingWallObject.h"
+#include "../../Common/Maths.h"
 
 Level* Level::instance = 0;
 
@@ -89,6 +91,13 @@ void GolfGame::UpdateGame(float dt)
 	Debug::Print("Render Time: " + std::to_string(1000.0f*dt), Vector2(10, 720-60));
 	Debug::Print("Score: " + std::to_string(playerPushes) + "!", Vector2(10, 720 - 100), Vector4(1, 1, 1, 1));
 
+	
+	float camX = 40 * sinf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
+	float camY = 40 * -sinf(world->GetMainCamera()->GetPitch() * PI / 180);
+	float camZ = 40 * cosf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
+	
+	world->GetMainCamera()->SetPosition(selectionObject->GetTransform().GetWorldPosition() + Vector3(camX, camY, camZ));
+
 	if (!inSelectionMode) {
 		world->GetMainCamera()->UpdateCamera(dt);
 	}
@@ -109,6 +118,9 @@ void GolfGame::UpdateGame(float dt)
 	renderer->Update(dt);
 	physics->Update(dt);
 
+	for (StateMachine*s : stateMachines)
+		s->Update();
+
 
 	if (level->loadNext) {
 		Debug::Print("Level Finished", Vector2(1280 / 3, 720 / 2), Vector4(1, 1, 1, 1));
@@ -124,7 +136,7 @@ void GolfGame::UpdateGame(float dt)
 	{
 
 		if (level->loadNext && !printed) {
-			client->SendPacket(StringPacket(playerName + " finished the level"));
+			client->SendPacket(StringPacket(playerName + " finished level " + std::to_string(level->GetLevel()-1)));
 			client->SendPacket(StringPacket(playerName + "'s Score was " + std::to_string(playerPushes)));
 			printed = true;
 
@@ -246,7 +258,8 @@ void GolfGame::InitWorld()
 	physics->Clear();
 
 	LoadLevel("TestLevel" + std::to_string(level->GetLevel()) + ".txt");
-
+	printed = false;
+	playerPushes = 0;
 
 }
 
@@ -257,7 +270,7 @@ void GolfGame::InitWorld()
 *	E - End/Goal
 *	x - Wall Cube
 *	. - Empty Space
-*
+*	m - Moving Wall
 */
 void GolfGame::LoadLevel(std::string filename)
 {
@@ -304,7 +317,8 @@ void GolfGame::LoadLevel(std::string filename)
 					}
 					else if(in == 'm')
 					{
-						AddGoalToWorld(pos, cubeDims*0.5f, 1.f);
+						AddMovingToWorld(pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
+						
 					}
 					width++;
 				}
@@ -377,7 +391,7 @@ void GolfGame::MoveSelectedObject()
 		if (world->Raycast(ray, closestCollision, true)) {
 			if (closestCollision.node == selectionObject) {
 				selectionObject->GetPhysicsObject()->AddForceAtPosition(ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
-				if(selectionObject->GetName() == "Player")
+				if(selectionObject->GetName() == "Player" && !level->loadNext)
 					playerPushes++;
 			}
 		}
@@ -414,6 +428,7 @@ GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, f
 	player->GetPhysicsObject()->InitSphereInertia();
 	player->GetPhysicsObject()->SetElasticity(0.66f);
 	player->GetPhysicsObject()->SetCanImpulse(true);
+	player->GetPhysicsObject()->SetAffectedByGrav(true);
 	player->level = level;
 
 	world->AddGameObject((GameObject*)player);
@@ -472,6 +487,38 @@ GameObject* GolfGame::AddGoalToWorld(const Vector3 & position, Vector3 dimension
 	world->AddGameObject(goal);
 
 	return goal;
+}
+
+GameObject * GolfGame::AddMovingToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+{
+	MovingWallObject* movingWall = new MovingWallObject("Moving Wall");
+
+	AABBVolume* volume = new AABBVolume(dimensions);
+	//OBBVolume* volume = new OBBVolume(dimensions);
+
+	movingWall->SetBoundingVolume((CollisionVolume*)volume);
+
+	movingWall->GetTransform().SetWorldPosition(position);
+	movingWall->GetTransform().SetWorldScale(dimensions);
+
+	movingWall->SetRenderObject(new RenderObject(&movingWall->GetTransform(), cubeMesh, basicTex, basicShader));
+	movingWall->SetPhysicsObject(new PhysicsObject(&movingWall->GetTransform(), movingWall->GetBoundingVolume()));
+
+	movingWall->GetPhysicsObject()->SetInverseMass(inverseMass);
+	movingWall->GetPhysicsObject()->InitCubeInertia();
+
+	movingWall->GetPhysicsObject()->SetElasticity(1.66f);
+	movingWall->GetPhysicsObject()->SetPhysical(true);
+	movingWall->GetPhysicsObject()->SetCanImpulse(false);
+	movingWall->GetPhysicsObject()->SetAffectedByGrav(false);
+
+	movingWall->SetupStateMachine();
+
+	stateMachines.push_back(movingWall->GetStateMachine());
+
+	world->AddGameObject((GameObject*)movingWall);
+
+	return movingWall;
 }
 
 GameObject* GolfGame::AddFloorToWorld(const Vector3 & position)
