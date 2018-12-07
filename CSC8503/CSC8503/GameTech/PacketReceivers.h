@@ -21,6 +21,8 @@ public:
 			std::string msg = realPacket->GetStringFromData();
 			std::cout << name << " received message: " << msg << std::endl;
 		}
+
+
 	}
 
 protected:

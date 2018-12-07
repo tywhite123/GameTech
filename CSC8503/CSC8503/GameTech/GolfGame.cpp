@@ -11,6 +11,7 @@
 #include "PacketReceivers.h"
 #include "MovingWallObject.h"
 #include "../../Common/Maths.h"
+#include "RobotObject.h"
 
 Level* Level::instance = 0;
 
@@ -24,6 +25,8 @@ GolfGame::GolfGame()
 	useGravity = false;
 	inSelectionMode = false;
 	playerPushes = 0;
+	cameraDist = 40;
+	freeCam = false;
 
 
 	Debug::SetRenderer(renderer);
@@ -92,11 +95,13 @@ void GolfGame::UpdateGame(float dt)
 	Debug::Print("Score: " + std::to_string(playerPushes) + "!", Vector2(10, 720 - 100), Vector4(1, 1, 1, 1));
 
 	
-	float camX = 40 * sinf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
-	float camY = 40 * -sinf(world->GetMainCamera()->GetPitch() * PI / 180);
-	float camZ = 40 * cosf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
-	
-	world->GetMainCamera()->SetPosition(selectionObject->GetTransform().GetWorldPosition() + Vector3(camX, camY, camZ));
+	if (!freeCam) {
+		float camX = cameraDist * sinf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
+		float camY = cameraDist * -sinf(world->GetMainCamera()->GetPitch() * PI / 180);
+		float camZ = cameraDist * cosf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
+
+		world->GetMainCamera()->SetPosition(selectionObject->GetTransform().GetWorldPosition() + Vector3(camX, camY, camZ));
+	}
 
 	if (!inSelectionMode) {
 		world->GetMainCamera()->UpdateCamera(dt);
@@ -224,12 +229,28 @@ void GolfGame::UpdateKeys()
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_UP)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -100));
+			//cameraDist -= 0.5f;
+			//selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -100));
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_DOWN)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 100));
+			//cameraDist += 0.5f;
+			//selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 100));
 		}
+	}
+
+	if (Window::GetKeyboard()->KeyHeld(KEYBOARD_F)) {
+		freeCam = !freeCam;
+	}
+	
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_UP)) {
+		cameraDist -= 1;
+		//selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -100));
+	}
+
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_DOWN)) {
+		cameraDist += 1;
+		//selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 100));
 	}
 
 	if (level->loadNext)
@@ -320,6 +341,10 @@ void GolfGame::LoadLevel(std::string filename)
 					{
 						AddMovingToWorld(pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
 						
+					}
+					else if(in == 'r')
+					{
+						AddRobotToWorld(pos, cubeDims*0.5f, 0);
 					}
 					width++;
 				}
@@ -421,6 +446,7 @@ GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, f
 	player->SetBoundingVolume((CollisionVolume*)volume);
 	player->GetTransform().SetWorldScale(sphereSize);
 	player->GetTransform().SetWorldPosition(position);
+	player->SetStartingPos(position);
 
 	player->SetRenderObject(new RenderObject(&player->GetTransform(), sphereMesh, basicTex, basicShader));
 	player->SetPhysicsObject(new PhysicsObject(&player->GetTransform(), player->GetBoundingVolume()));
@@ -520,6 +546,38 @@ GameObject * GolfGame::AddMovingToWorld(const Vector3 & position, Vector3 dimens
 	world->AddGameObject((GameObject*)movingWall);
 
 	return movingWall;
+}
+
+GameObject * GolfGame::AddRobotToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+{
+	RobotObject* robot = new RobotObject("Robot");
+
+	AABBVolume* volume = new AABBVolume(dimensions);
+	//OBBVolume* volume = new OBBVolume(dimensions);
+
+	robot->SetBoundingVolume((CollisionVolume*)volume);
+
+	robot->GetTransform().SetWorldPosition(position);
+	robot->GetTransform().SetWorldScale(dimensions);
+
+	robot->SetRenderObject(new RenderObject(&robot->GetTransform(), cubeMesh, basicTex, basicShader));
+	robot->SetPhysicsObject(new PhysicsObject(&robot->GetTransform(), robot->GetBoundingVolume()));
+
+	robot->GetPhysicsObject()->SetInverseMass(inverseMass);
+	robot->GetPhysicsObject()->InitCubeInertia();
+
+	robot->GetPhysicsObject()->SetElasticity(0.f);
+	robot->GetPhysicsObject()->SetPhysical(true);
+	robot->GetPhysicsObject()->SetCanImpulse(false);
+	robot->GetPhysicsObject()->SetAffectedByGrav(false);
+
+	robot->SetupStateMachine();
+
+	stateMachines.push_back(robot->GetStateMachine());
+
+	world->AddGameObject((GameObject*)robot);
+
+	return robot;
 }
 
 GameObject* GolfGame::AddFloorToWorld(const Vector3 & position)

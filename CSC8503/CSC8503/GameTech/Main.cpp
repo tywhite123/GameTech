@@ -165,7 +165,7 @@ int main() {
 	}	
 	//TestStateMachine();
 	//TestNetworking();
-	//TestPathfinding();
+	TestPathfinding();
 	
 	w->ShowOSPointer(false);
 	w->LockMouseToWindow(true);
@@ -188,7 +188,7 @@ int main() {
 			w->ShowConsole(false);
 		}
 
-		//DisplayPathfinding();
+		DisplayPathfinding();
 
 		//w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 

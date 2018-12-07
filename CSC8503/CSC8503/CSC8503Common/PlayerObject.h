@@ -12,11 +12,13 @@ public:
 	PlayerObject(string name);
 	virtual ~PlayerObject();
 
+	void SetStartingPos(Vector3 s) { startingPos = s; }
+
 	virtual void OnCollisionBegin(GameObject* otherObject) override;
 	//virtual void OnCollisionEnd(GameObject* otherObject) override;
 
 	Level* level;
-
+	Vector3 startingPos;
 
 };
 
@@ -41,6 +43,7 @@ public:
 	bool loadNext = false;
 	void SetLevel(int l) { level = l; }
 	int GetLevel() { return level; }
+
 };
 
 

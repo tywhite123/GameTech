@@ -38,6 +38,7 @@ namespace NCL {
 			GameObject* AddWallToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
 			GameObject* AddGoalToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
 			GameObject* AddMovingToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+			GameObject* AddRobotToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
 			GameObject* AddFloorToWorld(const Vector3& position);
 
 			GameTechRenderer*	renderer;
@@ -67,6 +68,9 @@ namespace NCL {
 			int playerPushes;
 
 			vector<StateMachine*> stateMachines;
+
+			int cameraDist;
+			bool freeCam;
 		};
 	}
 }

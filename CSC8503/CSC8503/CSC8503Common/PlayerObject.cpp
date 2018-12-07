@@ -18,4 +18,8 @@ void PlayerObject::OnCollisionBegin(GameObject * otherObject)
 			level->SetLevel(level->GetLevel() + 1);
 		}
 	}
+	if(otherObject->GetName() == "Robot")
+	{
+		this->transform.SetWorldPosition(startingPos);
+	}
 }

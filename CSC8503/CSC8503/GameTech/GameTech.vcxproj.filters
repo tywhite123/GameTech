@@ -45,6 +45,9 @@
     <ClCompile Include="MovingWallObject.cpp">
       <Filter>Game Related Objects</Filter>
     </ClCompile>
+    <ClCompile Include="RobotObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameTechRenderer.h">
@@ -67,6 +70,9 @@
     </ClInclude>
     <ClInclude Include="MovingWallObject.h">
       <Filter>Game Related Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="RobotObject.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

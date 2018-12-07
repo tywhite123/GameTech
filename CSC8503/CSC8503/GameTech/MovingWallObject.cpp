@@ -32,7 +32,7 @@ void MovingWallObject::SetupStateMachine()
 		Vector3 worldPos = realData->transform.GetWorldPosition();
 		realData->z -= 0.5f;
 		realData->transform.SetWorldPosition(Vector3(realData->x, realData->y, realData->z));
-		std::cout << "In State A! " << worldPos << " " << (&realData->transform.GetWorldPosition())->z << std::endl;
+		//std::cout << "In State A! " << worldPos << " " << (&realData->transform.GetWorldPosition())->z << std::endl;
 	};
 
 	StateFunc BFunc = [](void*data)
@@ -41,7 +41,7 @@ void MovingWallObject::SetupStateMachine()
 		Vector3 worldPos = realData->transform.GetWorldPosition();
 		realData->z += 0.5f;
 		realData->transform.SetWorldPosition(Vector3(realData->x, realData->y, realData->z));
-		std::cout << "	In State B! " << worldPos << " " << (&realData->transform.GetWorldPosition())->z << std::endl;
+		//std::cout << "	In State B! " << worldPos << " " << (&realData->transform.GetWorldPosition())->z << std::endl;
 
 	};
 

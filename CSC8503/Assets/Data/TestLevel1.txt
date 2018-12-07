@@ -2,7 +2,7 @@
 10
 10
 xxxxxxxxxx
-x.......Ex
+xr......Ex
 x........x
 x....xxxxx
 x........x
