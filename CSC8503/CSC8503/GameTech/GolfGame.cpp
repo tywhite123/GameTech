@@ -111,7 +111,7 @@ void GolfGame::UpdateGame(float dt)
 		Debug::Print("(G)ravity off", Vector2(10, 40));
 	}
 
-	SelectObject();
+	//SelectObject();
 	MoveSelectedObject();
 
 	world->UpdateWorld(dt);
@@ -119,7 +119,7 @@ void GolfGame::UpdateGame(float dt)
 	physics->Update(dt);
 
 	for (StateMachine*s : stateMachines)
-		s->Update();
+			s->Update();
 
 
 	if (level->loadNext) {
@@ -236,6 +236,7 @@ void GolfGame::UpdateKeys()
 	{
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_RETURN))
 		{
+			stateMachines.clear();
 			InitWorld();
 			level->loadNext = false;
 		}
