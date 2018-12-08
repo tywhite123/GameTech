@@ -71,7 +71,7 @@ void GameWorld::UpdateQuadTree() {
 	quadTree = new QuadTree<GameObject*>(Vector2(512, 512), 6);
 
 	for (auto& i : gameObjects) {
-		quadTree->Insert(i);
+		//quadTree->Insert(i);
 	}
 }
 

@@ -73,6 +73,9 @@ namespace NCL {
 
 			bool InsideAABB(const Vector3& pos, const Vector3& halfSize);
 
+			bool GetBroadphaseAABB(Vector3& outSize) const;
+			void UpdateBroadphaseAABB();
+
 		protected:
 			Transform			transform;
 
@@ -83,6 +86,9 @@ namespace NCL {
 
 			bool	isActive;
 			string	name;
+
+
+			Vector3 broadphaseAABB;
 		};
 	}
 }
