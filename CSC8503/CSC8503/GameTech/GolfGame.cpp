@@ -8,7 +8,7 @@
 #include "../CSC8503Common/PositionConstraint.h"
 #include <regex>
 #include "../CSC8503Common/PlayerObject.h"
-#include "PacketReceivers.h"
+#include "PacketReceiver.h"
 #include "MovingWallObject.h"
 #include "../../Common/Maths.h"
 #include "RobotObject.h"
@@ -81,20 +81,27 @@ void GolfGame::InitialiseNetwork()
 	int port = NetworkBase::GetDefaultPort();
 
 	client = new GameClient();
-	clientReceiver = PacketReceivers(name);
+	client->SetPeerID(playerID);
+	clientReceiver = StringPacketReceiver(playerName);
 
 	client->RegisterPacketHandler(String, &clientReceiver);
+	client->SetName(name);
 
 	connected = client->Connect(127, 0, 0, 1, port);
+
+
+
+	
 
 }
 
 void GolfGame::UpdateGame(float dt)
 {
+
 	Debug::Print("Render Time: " + std::to_string(1000.0f*dt), Vector2(10, 720-60));
 	Debug::Print("Score: " + std::to_string(playerPushes) + "!", Vector2(10, 720 - 100), Vector4(1, 1, 1, 1));
 
-	
+	//Move to an update Camera
 	if (!freeCam) {
 		float camX = cameraDist * sinf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
 		float camY = cameraDist * -sinf(world->GetMainCamera()->GetPitch() * PI / 180);
@@ -142,7 +149,7 @@ void GolfGame::UpdateGame(float dt)
 
 		if (level->loadNext && !printed) {
 			client->SendPacket(StringPacket(playerName + " finished level " + std::to_string(level->GetLevel()-1)));
-			client->SendPacket(StringPacket(playerName + "'s Score was " + std::to_string(playerPushes)));
+			client->SendPacket(ScorePacket(playerPushes));
 			printed = true;
 
 		}

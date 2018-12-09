@@ -16,8 +16,10 @@ namespace NCL {
 
 			void SendPacket(GamePacket&  payload);
 
+			void SetName(std::string uName) { name = uName; }
 			
 			void UpdateClient();
+			void SetPeerID(int& id) { peerID = &id; }
 		protected:
 			
 			void ThreadedUpdate();
@@ -25,6 +27,10 @@ namespace NCL {
 			ENetPeer*	netPeer;
 			std::atomic<bool>	threadAlive;
 			std::thread			updateThread;
+
+			std::string name;
+			int* peerID;
+
 		};
 	}
 }

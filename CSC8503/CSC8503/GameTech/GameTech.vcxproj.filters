@@ -48,6 +48,9 @@
     <ClCompile Include="RobotObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GameStates.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameTechRenderer.h">
@@ -59,9 +62,6 @@
     <ClInclude Include="GolfGame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PacketReceivers.h">
-      <Filter>ServerSide</Filter>
-    </ClInclude>
     <ClInclude Include="NetworkPlayer.h">
       <Filter>ServerSide</Filter>
     </ClInclude>
@@ -72,6 +72,12 @@
       <Filter>Game Related Objects</Filter>
     </ClInclude>
     <ClInclude Include="RobotObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketReceiver.h">
+      <Filter>ServerSide</Filter>
+    </ClInclude>
+    <ClInclude Include="GameStates.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -5,7 +5,7 @@
 #include <fstream>
 #include "../CSC8503Common/PlayerObject.h"
 #include "../CSC8503Common/GameClient.h"
-#include "PacketReceivers.h"
+#include "PacketReceiver.h"
 #include "../CSC8503Common/StateMachine.h"
 
 namespace NCL {
@@ -62,8 +62,9 @@ namespace NCL {
 			GameClient* client;
 			bool connected;
 			bool printed = false;
-			PacketReceivers clientReceiver;
+			StringPacketReceiver clientReceiver;
 
+			int playerID;
 			string playerName;
 			int playerPushes;
 
@@ -71,6 +72,9 @@ namespace NCL {
 
 			int cameraDist;
 			bool freeCam;
+
+			
+
 		};
 	}
 }

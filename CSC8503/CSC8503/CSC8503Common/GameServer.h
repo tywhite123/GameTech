@@ -3,6 +3,7 @@
 #include <atomic>
 
 #include "NetworkBase.h"
+#include <vector>
 
 namespace NCL {
 	namespace CSC8503 {
@@ -14,6 +15,14 @@ namespace NCL {
 
 			bool Initialise();
 			void Shutdown();
+
+			void SetPlayerVars(std::vector<int>& iDs, std::map<int, std::string>& p)
+			{
+				playerIDs = &iDs;
+				players = &p;
+			}
+
+			void SetNewPlayer(bool& p) { newPlayer = &p; }
 
 			void SetGameWorld(GameWorld &g);
 
@@ -27,6 +36,8 @@ namespace NCL {
 			
 			virtual void UpdateServer();
 
+			int GetClientCount() const { return clientCount; }
+
 		protected:
 			int			port;
 			int			clientMax;
@@ -34,6 +45,10 @@ namespace NCL {
 			GameWorld*	gameWorld;
 
 			std::atomic<bool> threadAlive;
+
+			std::vector<int>* playerIDs;
+			std::map<int, std::string>* players;
+			bool* newPlayer;
 
 			
 

@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameStates.cpp" />
     <ClCompile Include="GameTechRenderer.cpp" />
     <ClCompile Include="GolfGame.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -151,12 +152,13 @@
     <ClCompile Include="TutorialGame.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameStates.h" />
     <ClInclude Include="GameTechRenderer.h" />
     <ClInclude Include="GolfGame.h" />
     <ClInclude Include="MovingWallObject.h" />
     <ClInclude Include="NetworkedGame.h" />
     <ClInclude Include="NetworkPlayer.h" />
-    <ClInclude Include="PacketReceivers.h" />
+    <ClInclude Include="PacketReceiver.h" />
     <ClInclude Include="RobotObject.h" />
     <ClInclude Include="TutorialGame.h" />
   </ItemGroup>
