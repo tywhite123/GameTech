@@ -91,6 +91,81 @@ protected:
 };
 
 
+class LevelPacketReceiver : public PacketReceiver
+{
+public:
+	LevelPacketReceiver() {};
+	LevelPacketReceiver(std::string name, std::string& l)
+	{
+		this->name = name;
+		level = &l;
+	}
+	std::string GetName() { return name; }
+
+
+	void ReceivePacket(int type, GamePacket* payload, int source) override
+	{
+		if (type == New_Level)
+		{
+			StringPacket* realPacket = (StringPacket*)payload;
+			*level = realPacket->GetStringFromData();
+			std::cout << *level << std::endl;
+
+		}
+	}
+
+protected:
+	std::string name;
+	std::string* level;
+};
+
+
+class ObjectPacketReceiver : public PacketReceiver
+{
+public:
+	ObjectPacketReceiver() {};
+	//TODO: OBJECT CONSTRUCTOR
+
+	void ReceivePacket(int type, GamePacket* payload, int source) override
+	{
+		
+	}
+	
+protected:
+	string name;
+};
+
+class BallForcePacketReceiver : public PacketReceiver
+{
+public:
+	BallForcePacketReceiver() {};
+	BallForcePacketReceiver(string name, int& peerID, Vector3& ballForce, Vector3& collidedAt)
+	{
+		this->name = name;
+		*this->ballForce = ballForce;
+		*this->collidedAt = collidedAt;
+	}
+
+	void ReceivePacket(int type, GamePacket* payload, int source) override
+	{
+		if(type == Ball_Force)
+		{
+			BallForcePacket* data = (BallForcePacket*)payload;
+			*peerID = source;
+			*ballForce = data->ballForce;
+			*collidedAt = data->collidedAt;
+		}
+	}
+
+protected:
+	string name;
+	int* peerID;
+	Vector3* ballForce;
+	Vector3* collidedAt;
+};
+
+
+
 
 
 

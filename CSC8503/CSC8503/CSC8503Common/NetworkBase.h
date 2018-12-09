@@ -2,6 +2,11 @@
 #include <enet/enet.h>
 #include <map>
 #include <string>
+#include "../../Common/Vector3.h"
+#include "../../Common/Quaternion.h"
+#include "CollisionVolume.h"
+
+using namespace NCL::Maths;
 
 enum BasicNetworkMessages {
 	None,
@@ -14,7 +19,9 @@ enum BasicNetworkMessages {
 	Player_Connected,
 	Player_Disconnected,
 	Shutdown,
-	Score
+	Score,
+	New_Level,
+	Ball_Force
 };
 
 struct GamePacket {
@@ -96,6 +103,57 @@ struct ScorePacket : public GamePacket {
 	}
 };
 
+
+struct LevelPacket:public GamePacket
+{
+	char	stringData[256];
+
+	LevelPacket(const std::string& message) {
+		type = BasicNetworkMessages::New_Level;
+		size = (short)message.length();
+
+		memcpy(stringData, message.data(), size);
+	};
+
+	std::string GetStringFromData() {
+		std::string realString(stringData);
+		realString.resize(size);
+		return realString;
+	}
+};
+
+struct BallForcePacket : public GamePacket
+{
+	Vector3 ballForce;
+	Vector3 collidedAt;
+
+	BallForcePacket(Vector3 force, Vector3 collided)
+	{
+		ballForce = force;
+		collidedAt = collided;
+		size = (sizeof(Vector3) * 2);
+		type = BasicNetworkMessages::Ball_Force;
+	}
+
+};
+
+struct ObjectPacket : public GamePacket
+{
+	int objID;
+	NCL::CollisionVolume volume;
+	Vector3 pos;
+	Quaternion ori;
+	
+	ObjectPacket(int objID, NCL::CollisionVolume vol, Vector3 pos, Quaternion ori)
+	{
+		this->objID = objID;
+		volume = vol;
+		this->pos = pos;
+		this->ori = ori;
+		size = (sizeof(int) * 2) + sizeof(Vector3) + sizeof(Quaternion);
+	}
+	
+};
 
 
 class PacketReceiver {

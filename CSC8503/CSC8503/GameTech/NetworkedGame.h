@@ -3,6 +3,13 @@
 #include "../CSC8503Common/GameServer.h"
 #include "PacketReceiver.h"
 
+//TODO: Somehow sort this out
+struct PlayerBall
+{
+	int playerToUpdate;
+	Vector3 ballForce;
+	Vector3 collidedAt;
+};
 
 class NetworkGame
 {
@@ -29,6 +36,7 @@ protected:
 	StringPacketReceiver stringReceiver;
 	PlayerConnectedPacketReceiver playerReceiver;
 	ScorePacketReceiver scoreReceiver;
+	BallForcePacketReceiver ballForceReceiver;
 	
 	//Player
 	vector<int> playerIDs;
@@ -42,4 +50,6 @@ protected:
 	
 
 	string level;
+
+	Vector3 startingPos;
 };

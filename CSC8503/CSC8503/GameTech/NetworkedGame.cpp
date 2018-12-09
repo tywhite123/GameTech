@@ -23,10 +23,13 @@ NetworkGame::NetworkGame()
 	stringReceiver = StringPacketReceiver(NAME);
 	playerReceiver = PlayerConnectedPacketReceiver(NAME, players);
 	scoreReceiver = ScorePacketReceiver(NAME, scores);
+	//ballForceReceiver = BallForcePacketReceiver(NAME, playerToUpdate, ballForce, collidedAt);
+
 
 	server->RegisterPacketHandler(Player_Connected, &playerReceiver);
 	server->RegisterPacketHandler(String, &stringReceiver);
 	server->RegisterPacketHandler(Score, &scoreReceiver);
+	//server->RegisterPacketHandler(Ball_Force, &ballForceReceiver);
 
 	server->SetNewPlayer(newPlayer);
 	LoadLevel("TestLevel1.txt");
@@ -34,6 +37,7 @@ NetworkGame::NetworkGame()
 
 NetworkGame::~NetworkGame()
 {
+	delete physics;
 	delete world;
 	NetworkBase::Destroy();
 }
@@ -77,10 +81,60 @@ void NetworkGame::LoadLevel(std::string filename)
 {
 	std::ifstream file("../../Assets/Data/" + filename);
 
+	int width = 0;
+	int depth = 0;
+	int x, y, z;
+	Vector3 cubeDims;
+	int i = 0;
+
 	if (file.is_open())
 	{
 		string line;
 		while (getline(file, line)) {
+			if (std::regex_match(line, std::regex("[0-9]+")))
+			{
+				switch (i)
+				{
+				case 0: x = stoi(line); break;
+				case 1: y = stoi(line); break;
+				case 2:
+					z = stoi(line);
+					cubeDims = Vector3(x, y, z);
+					break;
+				}
+				i++;
+			}
+			else
+			{
+				for (char& in : line) {
+					Vector3 pos(width*(cubeDims.x * 2), 0, depth*(cubeDims.z * 2));
+					if (in == 'x')
+					{
+						AddWallToWorld(pos, cubeDims, 0);
+					}
+					else if (in == 'S')
+					{
+						AddPlayerToWorld(pos, cubeDims.x * 0.5f, 10.0f);
+
+					}
+					else if (in == 'E')
+					{
+						AddGoalToWorld(pos, cubeDims*0.5f, 0);
+					}
+					else if (in == 'm')
+					{
+						AddMovingToWorld(pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
+
+					}
+					else if (in == 'r')
+					{
+						AddRobotToWorld(pos, cubeDims*0.5f, 0);
+					}
+					width++;
+				}
+				depth++;
+				width = 0;
+			}
 			level += line + "\n";
 
 		}

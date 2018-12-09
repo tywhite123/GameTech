@@ -211,41 +211,6 @@ void GolfGame::UpdateKeys()
 		world->ShuffleObjects(false);
 	}
 
-	//TODO: Remove this stuff later on
-	//If we've selected an object, we can manipulate it with some key presses
-	if (inSelectionMode && selectionObject) {
-		//Twist the selected object!
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_LEFT)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(-100, 0, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_RIGHT)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(100, 0, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_7)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 100, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_8)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, -100, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_RIGHT)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(100, 0, 0));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_UP)) {
-			//cameraDist -= 0.5f;
-			//selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -100));
-		}
-
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_DOWN)) {
-			//cameraDist += 0.5f;
-			//selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 100));
-		}
-	}
-
 	if (Window::GetKeyboard()->KeyHeld(KEYBOARD_F)) {
 		freeCam = !freeCam;
 	}
@@ -365,47 +330,47 @@ void GolfGame::LoadLevel(std::string filename)
 	AddFloorToWorld(Vector3(0, -(cubeDims.y * 2)/*-cubeDims.y*/, 0));
 }
 
-bool GolfGame::SelectObject()
-{
-	if (Window::GetKeyboard()->KeyPressed(KEYBOARD_Q)) {
-		inSelectionMode = !inSelectionMode;
-		if (inSelectionMode) {
-			Window::GetWindow()->ShowOSPointer(true);
-			Window::GetWindow()->LockMouseToWindow(false);
-		}
-		else {
-			Window::GetWindow()->ShowOSPointer(false);
-			Window::GetWindow()->LockMouseToWindow(true);
-		}
-	}
-	if (inSelectionMode) {
-		renderer->DrawString("Press Q to change to camera mode!", Vector2(10, 0));
-
-		if (Window::GetMouse()->ButtonDown(NCL::MouseButtons::MOUSE_LEFT)) {
-			if (selectionObject) {	//set colour to deselected;
-				selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
-				selectionObject = nullptr;
-			}
-
-			Ray ray = CollisionDetection::BuildRayFromMouse(*world->GetMainCamera());
-			Debug::DrawLine(ray.GetPosition(), ray.GetPosition() + (ray.GetDirection() * 1000), Vector4(1, 0, 0, 1));
-
-			RayCollision closestCollision;
-			if (world->Raycast(ray, closestCollision, true)) {
-				selectionObject = (GameObject*)closestCollision.node;
-				selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
-				return true;
-			}
-			else {
-				return false;
-			}
-		}
-	}
-	else {
-		renderer->DrawString("Press Q to change to select mode!", Vector2(10, 0));
-	}
-	return false;
-}
+//bool GolfGame::SelectObject()
+//{
+//	if (Window::GetKeyboard()->KeyPressed(KEYBOARD_Q)) {
+//		inSelectionMode = !inSelectionMode;
+//		if (inSelectionMode) {
+//			Window::GetWindow()->ShowOSPointer(true);
+//			Window::GetWindow()->LockMouseToWindow(false);
+//		}
+//		else {
+//			Window::GetWindow()->ShowOSPointer(false);
+//			Window::GetWindow()->LockMouseToWindow(true);
+//		}
+//	}
+//	if (inSelectionMode) {
+//		renderer->DrawString("Press Q to change to camera mode!", Vector2(10, 0));
+//
+//		if (Window::GetMouse()->ButtonDown(NCL::MouseButtons::MOUSE_LEFT)) {
+//			if (selectionObject) {	//set colour to deselected;
+//				selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
+//				selectionObject = nullptr;
+//			}
+//
+//			Ray ray = CollisionDetection::BuildRayFromMouse(*world->GetMainCamera());
+//			Debug::DrawLine(ray.GetPosition(), ray.GetPosition() + (ray.GetDirection() * 1000), Vector4(1, 0, 0, 1));
+//
+//			RayCollision closestCollision;
+//			if (world->Raycast(ray, closestCollision, true)) {
+//				selectionObject = (GameObject*)closestCollision.node;
+//				selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
+//				return true;
+//			}
+//			else {
+//				return false;
+//			}
+//		}
+//	}
+//	else {
+//		renderer->DrawString("Press Q to change to select mode!", Vector2(10, 0));
+//	}
+//	return false;
+//}
 
 void GolfGame::MoveSelectedObject()
 {
@@ -423,6 +388,7 @@ void GolfGame::MoveSelectedObject()
 		RayCollision closestCollision;
 		if (world->Raycast(ray, closestCollision, true)) {
 			if (closestCollision.node == selectionObject) {
+
 				selectionObject->GetPhysicsObject()->AddForceAtPosition(ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
 				if(selectionObject->GetName() == "Player" && !level->loadNext)
 					playerPushes++;

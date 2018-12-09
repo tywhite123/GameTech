@@ -171,8 +171,8 @@ int main() {
 	w->LockMouseToWindow(true);
 
 	//TutorialGame* g = new TutorialGame();
-	NetworkGame* n = new NetworkGame();
-	//GolfGame* g = new GolfGame();
+	//NetworkGame* n = new NetworkGame();
+	GolfGame* g = new GolfGame();
 	
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)) {
@@ -192,8 +192,8 @@ int main() {
 
 		//w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
-		n->UpdateServer(dt);
-		//g->UpdateGame(dt);
+		//n->UpdateServer();
+		g->UpdateGame(dt);
 		
 	}
 	Window::DestroyGameWindow();
