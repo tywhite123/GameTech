@@ -45,11 +45,14 @@
     <ClCompile Include="MovingWallObject.cpp">
       <Filter>Game Related Objects</Filter>
     </ClCompile>
-    <ClCompile Include="RobotObject.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GameStates.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SpinnerObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RobotObject.cpp">
+      <Filter>Game Related Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -71,14 +74,17 @@
     <ClInclude Include="MovingWallObject.h">
       <Filter>Game Related Objects</Filter>
     </ClInclude>
-    <ClInclude Include="RobotObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PacketReceiver.h">
       <Filter>ServerSide</Filter>
     </ClInclude>
     <ClInclude Include="GameStates.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SpinnerObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RobotObject.h">
+      <Filter>Game Related Objects</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

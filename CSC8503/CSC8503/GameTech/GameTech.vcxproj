@@ -149,6 +149,7 @@
     <ClCompile Include="NetworkPlayer.cpp" />
     <ClCompile Include="PacketReceivers.cpp" />
     <ClCompile Include="RobotObject.cpp" />
+    <ClCompile Include="SpinnerObject.cpp" />
     <ClCompile Include="TutorialGame.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -160,6 +161,7 @@
     <ClInclude Include="NetworkPlayer.h" />
     <ClInclude Include="PacketReceiver.h" />
     <ClInclude Include="RobotObject.h" />
+    <ClInclude Include="SpinnerObject.h" />
     <ClInclude Include="TutorialGame.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
