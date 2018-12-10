@@ -11,5 +11,13 @@ PushdownMachine::~PushdownMachine()
 {
 }
 
+void PushdownMachine::AddState(PushdownState * s)
+{
+	stateStack.push(s);
+	activeState = stateStack.top();
+}
+
+
 void PushdownMachine::Update() {
+	activeState->PushdownUpdate(&activeState);
 }

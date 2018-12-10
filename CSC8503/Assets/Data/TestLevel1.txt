@@ -6,8 +6,8 @@ xr......Ex
 x..s.....x
 x....xxxxx
 x........x
-xxxxxx...x
+xxxxxxs..x
 x......xxx
 x..xxxxxxx
-x.m..s..Sx
+x.m.....Sx
 xxxxxxxxxx

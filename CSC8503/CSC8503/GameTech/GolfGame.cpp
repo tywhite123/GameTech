@@ -412,7 +412,7 @@ void GolfGame::MoveSelectedObject()
 void GolfGame::SetPlayer(GameObject * player)
 {
 	selectionObject = player;
-	selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
+	selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
 }
 
 GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, float inverseMass)
@@ -462,6 +462,8 @@ GameObject* GolfGame::AddWallToWorld(const Vector3 & position, Vector3 dimension
 
 	wall->GetPhysicsObject()->SetElasticity(1.66f);
 	wall->GetPhysicsObject()->SetCanImpulse(false);
+
+	wall->GetRenderObject()->SetColour(Vector4(0.3f, 0.1f, 0.1f, 1));
 
 	world->AddGameObject(wall);
 
@@ -601,6 +603,8 @@ GameObject* GolfGame::AddFloorToWorld(const Vector3 & position, Vector3 dimensio
 
 	floor->GetPhysicsObject()->SetInverseMass(0);
 	floor->GetPhysicsObject()->InitCubeInertia();
+
+	floor->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
 
 	world->AddGameObject(floor);
 
