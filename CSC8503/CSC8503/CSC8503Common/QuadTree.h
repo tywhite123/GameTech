@@ -34,11 +34,11 @@ namespace NCL {
 		protected:
 			friend class QuadTree<T>;
 
-			QuadTreeNode() : parentTree(nullptr) {
+			QuadTreeNode() /*: parentTree(nullptr)*/ {
 				children = nullptr;
 			}
 
-			QuadTreeNode(QuadTree<T>&parent, Vector2 pos, Vector2 size) : parentTree(parent) {
+			QuadTreeNode(/*QuadTree<T>&parent,*/ Vector2 pos, Vector2 size)/* : parentTree(parent)*/ {
 				children		= nullptr;
 				this->position	= pos;
 				this->size		= size;
@@ -69,7 +69,7 @@ namespace NCL {
 								for(int j = 0; j < 4; ++j)
 								{
 									auto entry = i;
-									children->Insert(entry.object, entry.pos, entry.size, depthLeft - 1, maxSize);
+									children[j].Insert(entry.object, entry.pos, entry.size, depthLeft - 1, maxSize);
 								}
 							}
 							contents.clear();
@@ -82,13 +82,32 @@ namespace NCL {
 				//Split this quad tree node into 4
 				Vector2 halfSize = size / 2.0f;
 				children = new QuadTreeNode<T>[4];
-				children[0] = QuadTreeNode<T>(nullptr, position + Vector2(-halfSize.x, halfSize.y), halfSize);
-				children[1] = QuadTreeNode<T>(nullptr, position + Vector2(halfSize.x, halfSize.y), halfSize);
-				children[2] = QuadTreeNode<T>(nullptr, position + Vector2(-halfSize.x, -halfSize.y), halfSize);
-				children[3] = QuadTreeNode<T>(nullptr, position + Vector2(halfSize.x, -halfSize.y), halfSize);
+				children[0] = QuadTreeNode<T>(position + Vector2(-halfSize.x, halfSize.y), halfSize);
+				children[1] = QuadTreeNode<T>(position + Vector2(halfSize.x, halfSize.y), halfSize);
+				children[2] = QuadTreeNode<T>(position + Vector2(-halfSize.x, -halfSize.y), halfSize);
+				children[3] = QuadTreeNode<T>(position + Vector2(halfSize.x, -halfSize.y), halfSize);
 			}
 
 			void DebugDraw() {
+				Vector4 colour = Vector4(1, 0, 0, 1);
+				Vector3 corner1 = Vector3(position.x, 0, position.y) + Vector3(size.x, 0, size.y);
+				Vector3 corner2 = Vector3(position.x, 0, position.y) + Vector3(size.x, 0, -size.y);
+				Vector3 corner3 = Vector3(position.x, 0, position.y) + Vector3(-size.x, 0, -size.y);
+				Vector3 corner4 = Vector3(position.x, 0, position.y) + Vector3(-size.x, 0, size.y);
+
+				Debug::DrawLine(corner1, corner2, colour);
+				Debug::DrawLine(corner2, corner3, colour);
+				Debug::DrawLine(corner3, corner4, colour);
+				Debug::DrawLine(corner4, corner1, colour);
+
+				if(children)
+				{
+					for (int i = 0; i < 4; ++i)
+					{
+						children[i].DebugDraw();
+					}
+				}
+
 			}
 
 			void OperateOnContents(QuadTreeFunc& func) {
@@ -96,7 +115,7 @@ namespace NCL {
 				{
 					for (int i = 0; i < 4; ++i)
 					{
-						children->OperateOnContents(func);
+						children[i].OperateOnContents(func);
 					}
 				}
 				else
@@ -110,7 +129,7 @@ namespace NCL {
 
 		protected:
 			std::list<QuadTreeEntry<T>>	contents;
-			QuadTree<T>&	parentTree;
+			//QuadTree<T>&	parentTree;
 
 			Vector2 position;
 			Vector2 size;
@@ -128,7 +147,7 @@ namespace NCL {
 		class QuadTree	{
 		public:
 			QuadTree(Vector2 size, int maxDepth = 6, int maxSize = 5) 
-			: root(QuadTreeNode<T>(*this, Vector2(), size)){
+			: root(QuadTreeNode<T>(/**this, */Vector2(), size)){
 				this->maxDepth	= maxDepth;
 				this->maxSize	= maxSize;
 			}
@@ -140,6 +159,7 @@ namespace NCL {
 			}
 
 			void DebugDraw() {
+				root.DebugDraw();
 			}
 
 			void OperateOnContents(typename QuadTreeNode<T>::QuadTreeFunc  func) {

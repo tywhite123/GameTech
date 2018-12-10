@@ -12,6 +12,7 @@
 #include "MovingWallObject.h"
 #include "../../Common/Maths.h"
 #include "RobotObject.h"
+#include "SpinnerObject.h"
 
 Level* Level::instance = 0;
 
@@ -318,6 +319,10 @@ void GolfGame::LoadLevel(std::string filename)
 					{
 						AddRobotToWorld(pos, cubeDims*0.5f, 0);
 					}
+					else if(in == 's')
+					{
+						AddSpinnerToWorld(pos, Vector3(cubeDims.x*0.15f, cubeDims.y*0.35f, cubeDims.z), 10.0f, 10.0f);
+					}
 					width++;
 				}
 				depth++;
@@ -327,7 +332,7 @@ void GolfGame::LoadLevel(std::string filename)
 		}
 	}
 	file.close();
-	AddFloorToWorld(Vector3(0, -(cubeDims.y * 2)/*-cubeDims.y*/, 0));
+	AddFloorToWorld(Vector3((cubeDims.x*cubeDims.z) - cubeDims.x, -(cubeDims.y * 2)/*-cubeDims.y*/, (cubeDims.x*cubeDims.z) - cubeDims.z), Vector3((cubeDims.x*cubeDims.z), 10, (cubeDims.x*cubeDims.z)));
 }
 
 //bool GolfGame::SelectObject()
@@ -553,14 +558,42 @@ GameObject * GolfGame::AddRobotToWorld(const Vector3 & position, Vector3 dimensi
 	return robot;
 }
 
-GameObject* GolfGame::AddFloorToWorld(const Vector3 & position)
+GameObject* GolfGame::AddSpinnerToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass, float spinVal)
+{
+	SpinnerObject* spinner = new SpinnerObject("Spinner", spinVal);
+	OBBVolume* volume = new OBBVolume(dimensions);
+
+	spinner->SetBoundingVolume((CollisionVolume*)volume);
+
+	spinner->GetTransform().SetWorldPosition(position);
+	spinner->GetTransform().SetWorldScale(dimensions);
+
+	spinner->SetRenderObject(new RenderObject(&spinner->GetTransform(), cubeMesh, basicTex, basicShader));
+	spinner->SetPhysicsObject(new PhysicsObject(&spinner->GetTransform(), spinner->GetBoundingVolume()));
+
+	spinner->GetPhysicsObject()->SetInverseMass(inverseMass);
+	spinner->GetPhysicsObject()->InitCubeInertia();
+
+	spinner->GetPhysicsObject()->SetElasticity(0.3f);
+	spinner->GetPhysicsObject()->SetPhysical(true);
+	spinner->GetPhysicsObject()->SetCanImpulse(false);
+	spinner->GetPhysicsObject()->SetAffectedByGrav(false);
+
+	spinner->SetupStateMachine();
+
+	stateMachines.push_back(spinner->GetStateMachine());
+
+	world->AddGameObject((GameObject*)spinner);
+
+	return spinner;
+}
+
+GameObject* GolfGame::AddFloorToWorld(const Vector3 & position, Vector3 dimensions)
 {
 	GameObject* floor = new GameObject("Floor");
-
-	Vector3 floorSize = Vector3(1000, 10, 1000);
-	AABBVolume* volume = new AABBVolume(floorSize);
+	AABBVolume* volume = new AABBVolume(dimensions);
 	floor->SetBoundingVolume((CollisionVolume*)volume);
-	floor->GetTransform().SetWorldScale(floorSize);
+	floor->GetTransform().SetWorldScale(dimensions);
 	floor->GetTransform().SetWorldPosition(position);
 
 	floor->SetRenderObject(new RenderObject(&floor->GetTransform(), cubeMesh, basicTex, basicShader));

@@ -3,11 +3,11 @@
 10
 xxxxxxxxxx
 xr......Ex
-x........x
+x..s.....x
 x....xxxxx
 x........x
 xxxxxx...x
 x......xxx
 x..xxxxxxx
-x.m.....Sx
+x.m..s..Sx
 xxxxxxxxxx

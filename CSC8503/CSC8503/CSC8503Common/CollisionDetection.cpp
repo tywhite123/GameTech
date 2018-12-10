@@ -508,6 +508,7 @@ bool CollisionDetection::OBBSphereIntersection(const OBBVolume & volumeA, const 
 
 	Transform tempTransformA = worldTransformA;
 	tempTransformA.SetWorldPosition(Vector3());
+	//tempTransformA.SetLocalOrientation(Quaternion());
 
 	Transform tempTransformB = worldTransformB;// (invTransform * localPos);
 	tempTransformB.SetWorldPosition(invTransform * localPos);
@@ -520,8 +521,9 @@ bool CollisionDetection::OBBSphereIntersection(const OBBVolume & volumeA, const 
 
 
 	if (collided) {
-		Matrix3 t = worldTransformB.GetWorldOrientation().ToMatrix3();
-		collisionInfo.point.position = t * collisionInfo.point.position;
+		Matrix3 t = worldTransformA.GetWorldOrientation().ToMatrix3();
+		collisionInfo.point.position = t * collisionInfo.point.position + worldTransformA.GetWorldPosition();
+		collisionInfo.point.normal = t * collisionInfo.point.normal;
 	}
 	//.collidedAt = worldTransform.GetWorldMatrix() * collision.collidedAt;
 

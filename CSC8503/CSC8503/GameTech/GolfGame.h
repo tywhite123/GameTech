@@ -39,7 +39,8 @@ namespace NCL {
 			GameObject* AddGoalToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
 			GameObject* AddMovingToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
 			GameObject* AddRobotToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
-			GameObject* AddFloorToWorld(const Vector3& position);
+			GameObject* AddSpinnerToWorld(const Vector3&position, Vector3 dimensions, float inverseMass = 10.0f, float spinVal = 10.0f);
+			GameObject* AddFloorToWorld(const Vector3& position, Vector3 dimensions);
 
 			GameTechRenderer*	renderer;
 			PhysicsSystem*		physics;

@@ -39,8 +39,8 @@ namespace NCL {
 
 			//Advanced collision detection / resolution
 			bool operator < (const CollisionInfo& other) const {
-				size_t otherHash = (size_t)other.a + (size_t)other.b;
-				size_t thisHash  = (size_t)a + (size_t)b;
+				size_t otherHash = (size_t)other.a + ((size_t)other.b << 8);
+				size_t thisHash  = (size_t)a + ((size_t)b << 8);
 
 				if (thisHash < otherHash) {
 					return true;

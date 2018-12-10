@@ -164,7 +164,7 @@ void TutorialGame::InitWorld() {
 
 	//LoadLevel("TestLevel2.txt");
 
-	InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(10,10,10));
+	//InitCubeGridWorld(2, 1, 50.0f, 50.0f, Vector3(10,10,10));
 	//InitCubeGridWorld(5, 5, 50.0f, 50.0f, Vector3(15, 20, 10));
 	//InitSphereGridWorld(2, 1, 50.0f, 50.0f, 10.0f);
 	//InitMixedGridWorld(5, 5, 50, 50);
@@ -177,7 +177,7 @@ void TutorialGame::InitWorld() {
 	//InitCubeCollisionTorqueTest(w);
 
 	//InitSphereGridWorld(w, 1, 1, 50.0f, 50.0f, 10.0f);
-	//BridgeConstraintTest(w);
+	BridgeConstraintTest();
 	//InitGJKWorld(w);
 
 	//DodgyRaycastTest(w);
@@ -369,22 +369,27 @@ void TutorialGame::BridgeConstraintTest() {
 
 	Vector3 cubeSize = Vector3(8, 8, 8) * sizeMultiplier;
 
-	int numLinks = 5;
+	float invCubeMass = 5;
+	int numLinks = 10;
+	float maxDist = 30;
+	float cubeDist = 20;
 
-	GameObject* start = AddCubeToWorld(Vector3(0, 0, 0), cubeSize, 0);
+	Vector3 startPos = Vector3(0, 0, 0);
 
-	GameObject* end = AddCubeToWorld(Vector3((numLinks + 2) * 20 * sizeMultiplier, 0, 0), cubeSize, 0);
+	GameObject* start = AddCubeToWorld(startPos + Vector3(0, 0, 0), cubeSize, 0);
+
+	GameObject* end = AddCubeToWorld(startPos + Vector3((numLinks + 2) * cubeDist, 0, 0), cubeSize, 0);
 
 	GameObject* previous = start;
 
 	for (int i = 0; i < numLinks; ++i) {
-		GameObject* block = AddCubeToWorld(Vector3((i + 1) * 20 * sizeMultiplier, 0, 0), cubeSize, 10.0f);
-		PositionConstraint* constraint = new PositionConstraint(previous, block, 30.0f);
+		GameObject* block = AddCubeToWorld(startPos + Vector3((i + 1) * cubeDist, 0, 0), cubeSize, invCubeMass);
+		PositionConstraint* constraint = new PositionConstraint(previous, block, maxDist);
 		world->AddConstraint(constraint);
 		previous = block;
 	}
 
-	PositionConstraint* constraint = new PositionConstraint(previous, end, 30.0f);
+	PositionConstraint* constraint = new PositionConstraint(previous, end, maxDist);
 	world->AddConstraint(constraint);
 }
 

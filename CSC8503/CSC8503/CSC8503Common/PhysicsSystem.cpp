@@ -26,7 +26,7 @@ const float PhysicsSystem::UNIT_RECIPROCAL = 1.0f;
 
 PhysicsSystem::PhysicsSystem(GameWorld& g) : gameWorld(g)	{
 	applyGravity	= false;
-	useBroadPhase	= false;	
+	useBroadPhase = true;
 	dTOffset		= 0.0f;
 	globalDamping	= 0.95f;
 	//SetGravity(Vector3(0.0f, -9.8f, 0.0f));
@@ -69,6 +69,11 @@ void PhysicsSystem::Update(float dt) {
 
 	IntegrateAccel(dt); //Update accelerations from external forces
 
+	/*if(iterationCount == 0)
+	{
+		std::cout << "no iterations?" << std::endl;
+	}*/
+
 	for (int i = 0; i < iterationCount; ++i) {
 		if (useBroadPhase) {
 			UpdateObjectAABBs(); //Here?
@@ -85,6 +90,7 @@ void PhysicsSystem::Update(float dt) {
 
 		int constraintIterationCount = 10;
 		float constraintDt = subDt / (float)constraintIterationCount;
+		//float constraintDt = iterationDt / (float)constraintIterationCount;
 
 		for (int i = 0; i < constraintIterationCount; ++i) {
 			UpdateConstraints(constraintDt);
@@ -187,11 +193,15 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 	if (totalMass == 0.0f)
 		return;
 
-	transformA.SetWorldPosition(transformA.GetWorldPosition() -
-		(p.normal * p.penetration * (physA->GetInverseMass() / totalMass)));
 
-	transformB.SetWorldPosition(transformB.GetWorldPosition() +
-		(p.normal * p.penetration * (physB->GetInverseMass() / totalMass)));
+	if (a.GetPhysicsObject()->GetCanImpulse())
+		transformA.SetWorldPosition(transformA.GetWorldPosition() -
+			(p.normal * p.penetration * (physA->GetInverseMass() / totalMass)));
+
+
+	if (b.GetPhysicsObject()->GetCanImpulse())
+		transformB.SetWorldPosition(transformB.GetWorldPosition() +
+			(p.normal * p.penetration * (physB->GetInverseMass() / totalMass)));
 
 	//return;
 
@@ -232,10 +242,10 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 	if(b.GetPhysicsObject()->GetCanImpulse())
 		physB->ApplyLinearImpulse(fullImpulse);
 
-	if(a.GetBoundingVolume()->type != VolumeType::AABB || a.GetPhysicsObject()->GetCanImpulse())
+	if(a.GetBoundingVolume()->type != VolumeType::AABB && a.GetPhysicsObject()->GetCanImpulse())
 		physA->ApplyAngularImpulse(Vector3::Cross(relativeA, -fullImpulse));
 
-	if (b.GetBoundingVolume()->type != VolumeType::AABB || b.GetPhysicsObject()->GetCanImpulse())
+	if (b.GetBoundingVolume()->type != VolumeType::AABB && b.GetPhysicsObject()->GetCanImpulse())
 		physB->ApplyAngularImpulse(Vector3::Cross(relativeB, fullImpulse));
 
 
@@ -261,8 +271,8 @@ compare the collisions that we absolutely need to.
 
 */
 void PhysicsSystem::BroadPhase() {
-	/*broadphaseCollisions.clear();
-	QuadTree<GameObject*> tree(Vector2(1024, 1024), 7, 6);
+	broadphaseCollisions.clear();
+	QuadTree<GameObject*> tree(Vector2(1024, 1024), 7, 2);
 
 	std::vector<GameObject*>::const_iterator first;
 	std::vector<GameObject*>::const_iterator last;
@@ -297,7 +307,8 @@ void PhysicsSystem::BroadPhase() {
 			}
 		}
 	
-	});*/
+	});
+	//tree.DebugDraw();
 }
 
 /*
@@ -306,7 +317,7 @@ The broadphase will now only give us likely collisions, so we can now go through
 and work out if they are truly colliding, and if so, add them into the main collision list
 */
 void PhysicsSystem::NarrowPhase() {
-	/*for(std::set<CollisionDetection::CollisionInfo>::iterator
+	for(std::set<CollisionDetection::CollisionInfo>::iterator
 		i = broadphaseCollisions.begin(); i != broadphaseCollisions.end(); ++i)
 	{
 		CollisionDetection::CollisionInfo info = *i;
@@ -317,7 +328,7 @@ void PhysicsSystem::NarrowPhase() {
 				ImpulseResolveCollision(*info.a, *info.b, info.point);
 			allCollisions.insert(info);
 		}
-	}*/
+	}
 }
 
 /*
