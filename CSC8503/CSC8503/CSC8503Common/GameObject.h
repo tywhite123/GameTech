@@ -16,7 +16,7 @@ namespace NCL {
 
 		class GameObject	{
 		public:
-			GameObject(string name = "");
+			GameObject(int objID, string name = "");
 			~GameObject();
 
 			void SetBoundingVolume(CollisionVolume* vol) {
@@ -76,6 +76,8 @@ namespace NCL {
 			bool GetBroadphaseAABB(Vector3& outSize) const;
 			void UpdateBroadphaseAABB();
 
+			int GetObjID() const { return objID; }
+
 		protected:
 			Transform			transform;
 
@@ -86,7 +88,7 @@ namespace NCL {
 
 			bool	isActive;
 			string	name;
-
+			int objID;
 
 			Vector3 broadphaseAABB;
 		};

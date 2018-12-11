@@ -2,7 +2,7 @@
 #include "../CSC8503Common/State.h"
 
 
-RobotObject::RobotObject(std::string name):GameObject(name)
+RobotObject::RobotObject(int objID, std::string name):GameObject(objID, name)
 {
 	robotMachine = new StateMachine();
 }

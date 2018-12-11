@@ -21,7 +21,10 @@ enum BasicNetworkMessages {
 	Shutdown,
 	Score,
 	New_Level,
-	Ball_Force
+	Ball_Force,
+	Object_Data,
+	Player_Ready,
+	All_Players_Ready
 };
 
 struct GamePacket {
@@ -104,7 +107,7 @@ struct ScorePacket : public GamePacket {
 };
 
 
-struct LevelPacket:public GamePacket
+struct LevelPacket : public GamePacket
 {
 	char	stringData[256];
 
@@ -124,11 +127,13 @@ struct LevelPacket:public GamePacket
 
 struct BallForcePacket : public GamePacket
 {
+	int objID;
 	Vector3 ballForce;
 	Vector3 collidedAt;
 
-	BallForcePacket(Vector3 force, Vector3 collided)
+	BallForcePacket(int objID, Vector3 force, Vector3 collided)
 	{
+		this->objID = objID;
 		ballForce = force;
 		collidedAt = collided;
 		size = (sizeof(Vector3) * 2);
@@ -137,22 +142,45 @@ struct BallForcePacket : public GamePacket
 
 };
 
-struct ObjectPacket : public GamePacket
+struct ObjectDataPacket : public GamePacket
 {
 	int objID;
-	NCL::CollisionVolume volume;
 	Vector3 pos;
 	Quaternion ori;
 	
-	ObjectPacket(int objID, NCL::CollisionVolume vol, Vector3 pos, Quaternion ori)
+	ObjectDataPacket(int objID, Vector3 pos, Quaternion ori)
 	{
 		this->objID = objID;
-		volume = vol;
 		this->pos = pos;
 		this->ori = ori;
-		size = (sizeof(int) * 2) + sizeof(Vector3) + sizeof(Quaternion);
+		size = (sizeof(int)) + sizeof(Vector3) + sizeof(Quaternion);
+		type = Object_Data;
 	}
 	
+};
+
+struct ReadyPlayerPacket : public GamePacket
+{
+	bool ready;
+
+	ReadyPlayerPacket(bool r = true)
+	{
+		ready = r;
+		size = sizeof(bool);
+		type = Player_Ready;
+	}
+};
+
+struct AllPlayersReadyPacket : public GamePacket
+{
+	bool allReady;
+
+	AllPlayersReadyPacket(bool r = true)
+	{
+		allReady = r;
+		size = sizeof(bool);
+		type = All_Players_Ready;
+	}
 };
 
 

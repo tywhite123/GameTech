@@ -22,12 +22,12 @@ public:
 	void LoadLevel(string name);
 
 
-	GameObject* AddPlayerToWorld(const Vector3& position, float radius, float inverseMass = 10.0f);
-	GameObject* AddWallToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
-	GameObject* AddGoalToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
-	GameObject* AddMovingToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
-	GameObject* AddRobotToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
-	GameObject* AddFloorToWorld(const Vector3& position);
+	GameObject* AddPlayerToWorld(int objID, const Vector3& position, float radius, float inverseMass = 10.0f);
+	GameObject* AddWallToWorld(int objID, const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+	GameObject* AddGoalToWorld(int objID, const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+	GameObject* AddMovingToWorld(int objID, const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+	GameObject* AddRobotToWorld(int objID, const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+	GameObject* AddFloorToWorld(int objID, const Vector3 & position, Vector3 dimensions);
 
 protected:
 

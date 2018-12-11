@@ -13,6 +13,7 @@
 #include "../../Common/Maths.h"
 #include "RobotObject.h"
 #include "SpinnerObject.h"
+#include "../CSC8503Common/PushdownState.h"
 
 Level* Level::instance = 0;
 
@@ -28,12 +29,21 @@ GolfGame::GolfGame()
 	playerPushes = 0;
 	cameraDist = 40;
 	freeCam = false;
+	state = Main_Menu;
+	menuSelection = 0;
+	for (int i = 0; i < 4; ++i)
+		selected[i] = false;
+
+	sMachine = new StateMachine();
+
+	allReady = false;
 
 
 	Debug::SetRenderer(renderer);
 	level = Level::GetInstance();
 	InitialiseAssets();
 	InitialiseNetwork();
+	SetupPushdown();
  
 }
 
@@ -84,10 +94,15 @@ void GolfGame::InitialiseNetwork()
 	client = new GameClient();
 	client->SetPeerID(playerID);
 	clientReceiver = StringPacketReceiver(playerName);
+	objectDataReceiver = ObjectPacketReceiver(playerName, updateData);
+	allPlayersReadyReceiver = AllPlayersReadyReceiver(playerName, allReady);
 
 	client->RegisterPacketHandler(String, &clientReceiver);
+	client->RegisterPacketHandler(Object_Data, &objectDataReceiver);
+	client->RegisterPacketHandler(All_Players_Ready, &allPlayersReadyReceiver);
 	client->SetName(name);
 
+	//TODO: move to where the player select multiplayer
 	connected = client->Connect(127, 0, 0, 1, port);
 
 
@@ -96,69 +111,258 @@ void GolfGame::InitialiseNetwork()
 
 }
 
+void GolfGame::SetupPushdown()
+{	
+	StateFunc mainMenu = [](void* data)
+	{
+		GolfGame* g = (GolfGame*)data;
+		if(Window::GetKeyboard()->KeyPressed(KEYBOARD_DOWN))
+		{
+			g->menuSelection++;
+			if (g->menuSelection >= 4)
+				g->menuSelection = 0;
+		}
+		if (Window::GetKeyboard()->KeyPressed(KEYBOARD_UP))
+		{
+			g->menuSelection--;
+			if (g->menuSelection < 0)
+				g->menuSelection = 3;
+		}
+
+		if(g->menuSelection == 0)
+		{
+			g->selected[0] = true;
+			g->selected[1] = false;
+			g->selected[2] = false;
+			g->selected[3] = false;
+		}
+		else if(g->menuSelection == 1)
+		{
+			g->selected[0] = false;
+			g->selected[1] = true;
+			g->selected[2] = false;
+			g->selected[3] = false;
+		}
+		else if (g->menuSelection == 2)
+		{
+			g->selected[0] = false;
+			g->selected[1] = false;
+			g->selected[2] = true;
+			g->selected[3] = false;
+		}
+		else if (g->menuSelection == 3)
+		{
+			g->selected[0] = false;
+			g->selected[1] = false;
+			g->selected[2] = false;
+			g->selected[3] = true;
+		}
+
+		if(Window::GetKeyboard()->KeyPressed(KEYBOARD_RETURN))
+		{
+			//return PushdownState::Push;
+			if (g->menuSelection == 0)
+			{
+				g->state = Game;
+			}
+			else if (g->menuSelection == 1)
+			{
+				g->state = Lobby;
+			}
+			else if (g->menuSelection == 2)
+			{
+				//options
+			}
+			else if (g->menuSelection == 3)
+			{
+				//exit
+			}
+
+		}
+
+	};
+
+	StateFunc game = [](void* data)
+	{
+		GolfGame* g = (GolfGame*)data;
+		if (Window::GetKeyboard()->KeyPressed(KEYBOARD_P))
+			g->state = Pause;
+	};
+
+	StateFunc pause = [](void* data)
+	{
+		GolfGame* g = (GolfGame*)data;
+		if (Window::GetKeyboard()->KeyPressed(KEYBOARD_P))
+			g->state = Game;
+	};
+
+	StateFunc lobby = [](void* data)
+	{
+		GolfGame* g = (GolfGame*)data;
+		if (Window::GetKeyboard()->KeyPressed(KEYBOARD_RETURN))
+		{
+			//TODO: ready up serveer stuff
+			g->state = Game;
+		}
+
+		if (Window::GetKeyboard()->KeyPressed(KEYBOARD_BACK))
+		{
+			g->state = Main_Menu;
+		}
+	};
+
+	State* menuState = new GenericState(mainMenu, (void*)this);
+	sMachine->AddState(menuState);
+
+	State* gameState = new GenericState(game, (void*)this);
+	sMachine->AddState(gameState);
+
+	State* pauseState = new GenericState(pause, (void*)this);
+	sMachine->AddState(pauseState);
+
+	State* lobbyState = new GenericState(lobby, (void*)this);
+	sMachine->AddState(lobbyState);
+
+
+	GenericTransition<int&, int>* menuA = new GenericTransition<int&, int>(
+		GenericTransition<int&, int>::EqualsTransition, (int&)state, Game, menuState, gameState);
+
+	GenericTransition<int&, int>* menuB = new GenericTransition<int&, int>(
+		GenericTransition<int&, int>::EqualsTransition, (int&)state, Lobby, menuState, lobbyState);
+
+	GenericTransition<int&, int>* gameA = new GenericTransition<int&, int>(
+		GenericTransition<int&, int>::EqualsTransition, (int&)state, Pause, gameState, pauseState);
+
+	GenericTransition<int&, int>* pauseA = new GenericTransition<int&, int>(
+		GenericTransition<int&, int>::EqualsTransition, (int&)state, Game, pauseState, gameState);
+
+	GenericTransition<int&, int>* lobbyA = new GenericTransition<int&, int>(
+		GenericTransition<int&, int>::EqualsTransition, (int&)state, Game, lobbyState, gameState);
+
+	GenericTransition<int&, int>* lobbyB = new GenericTransition<int&, int>(
+		GenericTransition<int&, int>::EqualsTransition, (int&)state, Main_Menu, lobbyState, menuState);
+
+	sMachine->AddTransition(menuA);
+	sMachine->AddTransition(gameA);
+	sMachine->AddTransition(pauseA);
+	sMachine->AddTransition(menuB);
+	sMachine->AddTransition(lobbyA);
+	sMachine->AddTransition(lobbyB);
+
+
+}
+
 void GolfGame::UpdateGame(float dt)
 {
-
-	Debug::Print("Render Time: " + std::to_string(1000.0f*dt), Vector2(10, 720-60));
-	Debug::Print("Score: " + std::to_string(playerPushes) + "!", Vector2(10, 720 - 100), Vector4(1, 1, 1, 1));
-
-	//Move to an update Camera
-	if (!freeCam) {
-		float camX = cameraDist * sinf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
-		float camY = cameraDist * -sinf(world->GetMainCamera()->GetPitch() * PI / 180);
-		float camZ = cameraDist * cosf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
-
-		world->GetMainCamera()->SetPosition(selectionObject->GetTransform().GetWorldPosition() + Vector3(camX, camY, camZ));
+	
+	if(state == Main_Menu)
+	{
+		renderer->DrawString("Golf wit' Lads!", Vector2(100, 600), Vector4(0, 1, 0, 1));
+		renderer->DrawString(playerName, Vector2(900 - playerName.length(), 600), Vector4(0, 0, 0, 1));
+		renderer->DrawString("Single Player", Vector2(100, 350), Vector4(0, selected[0], 0, 1));
+		renderer->DrawString("Multi Player", Vector2(100, 300), Vector4(0, selected[1], 0, 1));
+		renderer->DrawString("Options", Vector2(100, 250), Vector4(0, selected[2], 0, 1));
+		renderer->DrawString("Exit", Vector2(100, 200), Vector4(0, selected[3], 0, 1));
+		world->UpdateWorld(dt);
+		renderer->Update(dt);
+		renderer->Render();
 	}
+	else if(state == Game){
+		renderer->DrawString("Render Time: " + std::to_string(1000.0f*dt), Vector2(10, 720 - 60));
+		renderer->DrawString("Score: " + std::to_string(playerPushes) + "!", Vector2(10, 720 - 100), Vector4(1, 1, 1, 1));
 
-	if (!inSelectionMode) {
-		world->GetMainCamera()->UpdateCamera(dt);
-	}
+		//Move to an update Camera
+		if (!freeCam) {
+			float camX = cameraDist * sinf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
+			float camY = cameraDist * -sinf(world->GetMainCamera()->GetPitch() * PI / 180);
+			float camZ = cameraDist * cosf(world->GetMainCamera()->GetYaw() * PI / 180) * cosf(world->GetMainCamera()->GetPitch() * PI / 180);
 
-	UpdateKeys();
+			world->GetMainCamera()->SetPosition(selectionObject->GetTransform().GetWorldPosition() + Vector3(camX, camY, camZ));
+		}
 
-	if (useGravity) {
-		Debug::Print("(G)ravity on", Vector2(10, 40));
-	}
-	else {
-		Debug::Print("(G)ravity off", Vector2(10, 40));
-	}
+		if (!inSelectionMode) {
+			world->GetMainCamera()->UpdateCamera(dt);
+		}
 
-	//SelectObject();
-	MoveSelectedObject();
+		UpdateKeys();
 
-	world->UpdateWorld(dt);
-	renderer->Update(dt);
-	physics->Update(dt);
+		if (useGravity) {
+			Debug::Print("(G)ravity on", Vector2(10, 40));
+		}
+		else {
+			Debug::Print("(G)ravity off", Vector2(10, 40));
+		}
 
-	for (StateMachine*s : stateMachines)
+		//SelectObject();
+		MoveSelectedObject();
+
+		world->UpdateWorld(dt);
+		renderer->Update(dt);
+		physics->Update(dt);
+
+		for (StateMachine*s : stateMachines)
 			s->Update();
 
 
-	if (level->loadNext) {
-		Debug::Print("Level Finished", Vector2(1280 / 3, 720 / 2), Vector4(1, 1, 1, 1));
-		Debug::Print("Press Enter to Load Next Level!", Vector2(1280 / 6, (720 / 2)-40), Vector4(1, 1, 1, 1));
-		Debug::Print("Score: " + std::to_string(playerPushes) +  "!", Vector2(1280 / 3, (720 / 2) - 80), Vector4(1, 1, 1, 1));
-		//printed = false;
-		
-	}
+		if (level->loadNext) {
+			renderer->DrawString("Level Finished", Vector2(1280 / 3, 720 / 2), Vector4(1, 1, 1, 1));
+			renderer->DrawString("Press Enter to Load Next Level!", Vector2(1280 / 6, (720 / 2) - 40), Vector4(1, 1, 1, 1));
+			renderer->DrawString("Score: " + std::to_string(playerPushes) + "!", Vector2(1280 / 3, (720 / 2) - 80), Vector4(1, 1, 0, 1));
 
-
-
-	if(connected)
-	{
-
-		if (level->loadNext && !printed) {
-			client->SendPacket(StringPacket(playerName + " finished level " + std::to_string(level->GetLevel()-1)));
-			client->SendPacket(ScorePacket(playerPushes));
-			printed = true;
+			printed = false;
 
 		}
-		client->UpdateClient();
+
+
+
+		if (connected)
+		{
+
+			if (level->loadNext && !printed) {
+				client->SendPacket(StringPacket(playerName + " finished level " + std::to_string(level->GetLevel() - 1)));
+				client->SendPacket(ScorePacket(playerPushes));
+				printed = true;
+
+			}
+			client->UpdateClient();
+
+
+			//More efficient way?
+			for(UpdateData* d: updateData)
+			{
+				GameObject* obj = dynamicObjects.at(d->objID);
+				obj->GetTransform().SetWorldPosition(d->pos);
+				obj->GetTransform().SetLocalOrientation(d->ori);
+			}
+			updateData.clear();
+		}
+
+		Debug::FlushRenderables();
+		renderer->Render();
+	}
+	else if(state == Pause)
+	{
+		renderer->DrawString("Pause!", Vector2(100, 600), Vector4(0, 1, 0, 1));
+		renderer->DrawString("Press P to Exit Pause!", Vector2(100, 200), Vector4(0, 1, 0, 1));
+		world->UpdateWorld(dt);
+		renderer->Update(dt);
+		renderer->Render();
+	}
+	else if(state == Lobby)
+	{
+		renderer->DrawString("Multiplayer Lobby!", Vector2(100, 600), Vector4(0, 1, 0, 1));
+		renderer->DrawString("Players Connected: ", Vector2(100, 500), Vector4(0, 1, 0, 1));
+		renderer->DrawString(playerName, Vector2(100, 450), Vector4(0, 0, 0, 1));
+		//client->UpdateClient();
+		
+
+		world->UpdateWorld(dt);
+		renderer->Update(dt);
+		renderer->Render();
+
 	}
 
-	Debug::FlushRenderables();
-	renderer->Render();
+	sMachine->Update();
 }
 
 void GolfGame::UpdateKeys()
@@ -212,7 +416,7 @@ void GolfGame::UpdateKeys()
 		world->ShuffleObjects(false);
 	}
 
-	if (Window::GetKeyboard()->KeyHeld(KEYBOARD_F)) {
+	if (Window::GetKeyboard()->KeyPressed(KEYBOARD_F)) {
 		freeCam = !freeCam;
 	}
 	
@@ -244,7 +448,7 @@ void GolfGame::InitCamera()
 	world->GetMainCamera()->SetFarPlane(4200.0f);
 	world->GetMainCamera()->SetPitch(-35.0f);
 	world->GetMainCamera()->SetYaw(320.0f);
-	world->GetMainCamera()->SetPosition(Vector3(-50, 120, 200));
+	world->GetMainCamera()->SetPosition(Vector3(-100, 120, 200));
 }
 
 void GolfGame::InitWorld()
@@ -275,7 +479,7 @@ void GolfGame::LoadLevel(std::string filename)
 	int x, y, z;
 	Vector3 cubeDims;
 	int i = 0;
-
+	int objID = 0;
 	if (file.is_open())
 	{
 		string line;
@@ -299,31 +503,32 @@ void GolfGame::LoadLevel(std::string filename)
 					Vector3 pos(width*(cubeDims.x * 2), 0, depth*(cubeDims.z * 2));
 					if (in == 'x')
 					{
-						AddWallToWorld(pos, cubeDims, 0);
+						AddWallToWorld(objID, pos, cubeDims, 0);
 					}
 					else if (in == 'S')
 					{
-						AddPlayerToWorld(pos, cubeDims.x * 0.5f, 10.0f);
+						AddPlayerToWorld(objID, pos, cubeDims.x * 0.5f, 10.0f);
 						
 					}
 					else if (in == 'E')
 					{
-						AddGoalToWorld(pos, cubeDims*0.5f, 0);
+						AddGoalToWorld(objID, pos, cubeDims*0.5f, 0);
 					}
 					else if(in == 'm')
 					{
-						AddMovingToWorld(pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
+						AddMovingToWorld(objID, pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
 						
 					}
 					else if(in == 'r')
 					{
-						AddRobotToWorld(pos, cubeDims*0.5f, 0);
+						AddRobotToWorld(objID, pos, cubeDims*0.5f, 0);
 					}
 					else if(in == 's')
 					{
-						AddSpinnerToWorld(pos, Vector3(cubeDims.x*0.15f, cubeDims.y*0.35f, cubeDims.z), 10.0f, 10.0f);
+						AddSpinnerToWorld(objID, pos, Vector3(cubeDims.x*0.15f, cubeDims.y*0.35f, cubeDims.z), 10.0f, 10.0f);
 					}
 					width++;
+					objID++;
 				}
 				depth++;
 				width = 0;
@@ -332,7 +537,7 @@ void GolfGame::LoadLevel(std::string filename)
 		}
 	}
 	file.close();
-	AddFloorToWorld(Vector3((cubeDims.x*cubeDims.z) - cubeDims.x, -(cubeDims.y * 2)/*-cubeDims.y*/, (cubeDims.x*cubeDims.z) - cubeDims.z), Vector3((cubeDims.x*cubeDims.z), 10, (cubeDims.x*cubeDims.z)));
+	AddFloorToWorld(objID, Vector3((cubeDims.x*cubeDims.z) - cubeDims.x, -(cubeDims.y * 2)/*-cubeDims.y*/, (cubeDims.x*cubeDims.z) - cubeDims.z), Vector3((cubeDims.x*cubeDims.z), 10, (cubeDims.x*cubeDims.z)));
 }
 
 //bool GolfGame::SelectObject()
@@ -395,6 +600,7 @@ void GolfGame::MoveSelectedObject()
 			if (closestCollision.node == selectionObject) {
 
 				selectionObject->GetPhysicsObject()->AddForceAtPosition(ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
+				client->SendPacket(BallForcePacket(selectionObject->GetObjID(), ray.GetDirection() * forceMagnitude, closestCollision.collidedAt));
 				if(selectionObject->GetName() == "Player" && !level->loadNext)
 					playerPushes++;
 			}
@@ -415,9 +621,9 @@ void GolfGame::SetPlayer(GameObject * player)
 	selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
 }
 
-GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, float inverseMass)
+GameObject* GolfGame::AddPlayerToWorld(int objID, const Vector3 & position, float radius, float inverseMass)
 {
-	PlayerObject* player = new PlayerObject("Player");
+	PlayerObject* player = new PlayerObject(objID, "Player");
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
 	SphereVolume* volume = new SphereVolume(radius);
@@ -436,15 +642,17 @@ GameObject* GolfGame::AddPlayerToWorld(const Vector3 & position, float radius, f
 	player->GetPhysicsObject()->SetAffectedByGrav(true);
 	player->level = level;
 
+	dynamicObjects.insert(DynamicObject(objID, (GameObject*)player));
+
 	world->AddGameObject((GameObject*)player);
 	SetPlayer(player);
 
 	return player;
 }
 
-GameObject* GolfGame::AddWallToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject* GolfGame::AddWallToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	GameObject* wall = new GameObject("Wall");
+	GameObject* wall = new GameObject(objID, "Wall");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -470,9 +678,9 @@ GameObject* GolfGame::AddWallToWorld(const Vector3 & position, Vector3 dimension
 	return wall;
 }
 
-GameObject* GolfGame::AddGoalToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject* GolfGame::AddGoalToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	GameObject* goal = new GameObject("Goal");
+	GameObject* goal = new GameObject(objID, "Goal");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -496,9 +704,9 @@ GameObject* GolfGame::AddGoalToWorld(const Vector3 & position, Vector3 dimension
 	return goal;
 }
 
-GameObject * GolfGame::AddMovingToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject * GolfGame::AddMovingToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	MovingWallObject* movingWall = new MovingWallObject("Moving Wall");
+	MovingWallObject* movingWall = new MovingWallObject(objID, "Moving Wall");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -523,14 +731,16 @@ GameObject * GolfGame::AddMovingToWorld(const Vector3 & position, Vector3 dimens
 
 	stateMachines.push_back(movingWall->GetStateMachine());
 
+	dynamicObjects.insert(DynamicObject(objID, (GameObject*)movingWall));
+
 	world->AddGameObject((GameObject*)movingWall);
 
 	return movingWall;
 }
 
-GameObject * GolfGame::AddRobotToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject * GolfGame::AddRobotToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	RobotObject* robot = new RobotObject("Robot");
+	RobotObject* robot = new RobotObject(objID, "Robot");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -555,14 +765,16 @@ GameObject * GolfGame::AddRobotToWorld(const Vector3 & position, Vector3 dimensi
 
 	stateMachines.push_back(robot->GetStateMachine());
 
+	dynamicObjects.insert(DynamicObject(objID, (GameObject*)robot));
+
 	world->AddGameObject((GameObject*)robot);
 
 	return robot;
 }
 
-GameObject* GolfGame::AddSpinnerToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass, float spinVal)
+GameObject* GolfGame::AddSpinnerToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass, float spinVal)
 {
-	SpinnerObject* spinner = new SpinnerObject("Spinner", spinVal);
+	SpinnerObject* spinner = new SpinnerObject(objID, "Spinner", spinVal);
 	OBBVolume* volume = new OBBVolume(dimensions);
 
 	spinner->SetBoundingVolume((CollisionVolume*)volume);
@@ -585,14 +797,16 @@ GameObject* GolfGame::AddSpinnerToWorld(const Vector3 & position, Vector3 dimens
 
 	stateMachines.push_back(spinner->GetStateMachine());
 
+	dynamicObjects.insert(DynamicObject(objID, (GameObject*)spinner));
+
 	world->AddGameObject((GameObject*)spinner);
 
 	return spinner;
 }
 
-GameObject* GolfGame::AddFloorToWorld(const Vector3 & position, Vector3 dimensions)
+GameObject* GolfGame::AddFloorToWorld(int objID, const Vector3 & position, Vector3 dimensions)
 {
-	GameObject* floor = new GameObject("Floor");
+	GameObject* floor = new GameObject(objID, "Floor");
 	AABBVolume* volume = new AABBVolume(dimensions);
 	floor->SetBoundingVolume((CollisionVolume*)volume);
 	floor->GetTransform().SetWorldScale(dimensions);

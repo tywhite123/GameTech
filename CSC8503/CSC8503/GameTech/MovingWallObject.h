@@ -9,7 +9,7 @@ using namespace NCL::CSC8503;
 class MovingWallObject : public GameObject
 {
 public:
-	MovingWallObject(string name);
+	MovingWallObject(int objID, string name);
 	~MovingWallObject();
 
 	StateMachine* GetStateMachine() { return moveMachine; }

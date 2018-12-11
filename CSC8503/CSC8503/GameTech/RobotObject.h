@@ -8,7 +8,7 @@ class RobotObject :
 	public GameObject
 {
 public:
-	RobotObject(std::string name);
+	RobotObject(int objID, std::string name);
 	~RobotObject();
 
 	void SetupStateMachine();

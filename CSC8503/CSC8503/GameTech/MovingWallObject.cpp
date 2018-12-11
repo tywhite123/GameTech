@@ -2,7 +2,7 @@
 #include "../CSC8503Common/StateTransition.h"
 
 
-MovingWallObject::MovingWallObject(string name) : GameObject(name)
+MovingWallObject::MovingWallObject(int objID, string name) : GameObject(objID, name)
 {
 	moveMachine = new StateMachine();
 	

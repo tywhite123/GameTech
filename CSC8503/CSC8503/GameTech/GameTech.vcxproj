@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameObjectMaker.cpp" />
     <ClCompile Include="GameStates.cpp" />
     <ClCompile Include="GameTechRenderer.cpp" />
     <ClCompile Include="GolfGame.cpp" />
@@ -153,6 +154,7 @@
     <ClCompile Include="TutorialGame.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameObjectMaker.h" />
     <ClInclude Include="GameStates.h" />
     <ClInclude Include="GameTechRenderer.h" />
     <ClInclude Include="GolfGame.h" />

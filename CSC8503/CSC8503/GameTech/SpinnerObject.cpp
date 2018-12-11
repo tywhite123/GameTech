@@ -2,7 +2,7 @@
 #include "../CSC8503Common/State.h"
 
 
-SpinnerObject::SpinnerObject(std::string name, float spin) : GameObject(name)
+SpinnerObject::SpinnerObject(int objID, std::string name, float spin) : GameObject(objID, name)
 {
 	spinnerMachine = new StateMachine();
 	spinVal = spin;

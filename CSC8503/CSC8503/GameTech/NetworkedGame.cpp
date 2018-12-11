@@ -66,6 +66,18 @@ void NetworkGame::UpdateServer(float dt)
 	}
 
 	server->UpdateServer();
+
+
+
+	vector<GameObject*>::const_iterator first;
+	vector<GameObject*>::const_iterator last;
+	world->GetObjectIterators(first, last);
+
+	for (auto i = first; i != last; ++i)
+	{
+		if ((*i)->GetPhysicsObject()->GetInverseMass() > 0)
+			server->SendGlobalMessage(ObjectDataPacket((*i)->GetObjID(), (*i)->GetTransform().GetWorldPosition(), (*i)->GetTransform().GetWorldOrientation()));
+	}
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
@@ -86,6 +98,8 @@ void NetworkGame::LoadLevel(std::string filename)
 	int x, y, z;
 	Vector3 cubeDims;
 	int i = 0;
+
+	int objID = 0;
 
 	if (file.is_open())
 	{
@@ -110,27 +124,29 @@ void NetworkGame::LoadLevel(std::string filename)
 					Vector3 pos(width*(cubeDims.x * 2), 0, depth*(cubeDims.z * 2));
 					if (in == 'x')
 					{
-						AddWallToWorld(pos, cubeDims, 0);
+						AddWallToWorld(objID, pos, cubeDims, 0);
 					}
 					else if (in == 'S')
 					{
-						AddPlayerToWorld(pos, cubeDims.x * 0.5f, 10.0f);
+						AddPlayerToWorld(objID, pos, cubeDims.x * 0.5f, 10.0f);
+						startingPos = pos;
 
 					}
 					else if (in == 'E')
 					{
-						AddGoalToWorld(pos, cubeDims*0.5f, 0);
+						AddGoalToWorld(objID, pos, cubeDims*0.5f, 0);
 					}
 					else if (in == 'm')
 					{
-						AddMovingToWorld(pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
+						AddMovingToWorld(objID, pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
 
 					}
 					else if (in == 'r')
 					{
-						AddRobotToWorld(pos, cubeDims*0.5f, 0);
+						AddRobotToWorld(objID, pos, cubeDims*0.5f, 0);
 					}
 					width++;
+					objID++;
 				}
 				depth++;
 				width = 0;
@@ -141,12 +157,14 @@ void NetworkGame::LoadLevel(std::string filename)
 	}
 	file.close();
 
+	AddFloorToWorld(objID, Vector3((cubeDims.x*cubeDims.z) - cubeDims.x, -(cubeDims.y * 2)/*-cubeDims.y*/, (cubeDims.x*cubeDims.z) - cubeDims.z), Vector3((cubeDims.x*cubeDims.z), 10, (cubeDims.x*cubeDims.z)));
+
 	std::cout << level << std::endl;
 }
 
-GameObject* NetworkGame::AddPlayerToWorld(const Vector3 & position, float radius, float inverseMass)
+GameObject* NetworkGame::AddPlayerToWorld(int objID, const Vector3 & position, float radius, float inverseMass)
 {
-	PlayerObject* player = new PlayerObject("Player");
+	PlayerObject* player = new PlayerObject(objID, "Player");
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
 	SphereVolume* volume = new SphereVolume(radius);
@@ -170,9 +188,9 @@ GameObject* NetworkGame::AddPlayerToWorld(const Vector3 & position, float radius
 	return player;
 }
 
-GameObject* NetworkGame::AddWallToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject* NetworkGame::AddWallToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	GameObject* wall = new GameObject("Wall");
+	GameObject* wall = new GameObject(objID, "Wall");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -196,9 +214,9 @@ GameObject* NetworkGame::AddWallToWorld(const Vector3 & position, Vector3 dimens
 	return wall;
 }
 
-GameObject* NetworkGame::AddGoalToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject* NetworkGame::AddGoalToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	GameObject* goal = new GameObject("Goal");
+	GameObject* goal = new GameObject(objID, "Goal");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -222,9 +240,9 @@ GameObject* NetworkGame::AddGoalToWorld(const Vector3 & position, Vector3 dimens
 	return goal;
 }
 
-GameObject * NetworkGame::AddMovingToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject * NetworkGame::AddMovingToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	MovingWallObject* movingWall = new MovingWallObject("Moving Wall");
+	MovingWallObject* movingWall = new MovingWallObject(objID, "Moving Wall");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -254,9 +272,9 @@ GameObject * NetworkGame::AddMovingToWorld(const Vector3 & position, Vector3 dim
 	return movingWall;
 }
 
-GameObject * NetworkGame::AddRobotToWorld(const Vector3 & position, Vector3 dimensions, float inverseMass)
+GameObject * NetworkGame::AddRobotToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass)
 {
-	RobotObject* robot = new RobotObject("Robot");
+	RobotObject* robot = new RobotObject(objID, "Robot");
 
 	AABBVolume* volume = new AABBVolume(dimensions);
 	//OBBVolume* volume = new OBBVolume(dimensions);
@@ -286,14 +304,13 @@ GameObject * NetworkGame::AddRobotToWorld(const Vector3 & position, Vector3 dime
 	return robot;
 }
 
-GameObject* NetworkGame::AddFloorToWorld(const Vector3 & position)
+//TODO: Update with the new one from singleplayer
+GameObject* NetworkGame::AddFloorToWorld(int objID, const Vector3 & position, Vector3 dimensions)
 {
-	GameObject* floor = new GameObject("Floor");
-
-	Vector3 floorSize = Vector3(1000, 10, 1000);
-	AABBVolume* volume = new AABBVolume(floorSize);
+	GameObject* floor = new GameObject(objID, "Floor");
+	AABBVolume* volume = new AABBVolume(dimensions);
 	floor->SetBoundingVolume((CollisionVolume*)volume);
-	floor->GetTransform().SetWorldScale(floorSize);
+	floor->GetTransform().SetWorldScale(dimensions);
 	floor->GetTransform().SetWorldPosition(position);
 
 	//floor->SetRenderObject(new RenderObject(&floor->GetTransform(), cubeMesh, basicTex, basicShader));
@@ -301,6 +318,8 @@ GameObject* NetworkGame::AddFloorToWorld(const Vector3 & position)
 
 	floor->GetPhysicsObject()->SetInverseMass(0);
 	floor->GetPhysicsObject()->InitCubeInertia();
+
+	floor->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
 
 	world->AddGameObject(floor);
 

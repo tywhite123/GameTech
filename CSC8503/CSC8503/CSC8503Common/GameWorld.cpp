@@ -38,6 +38,9 @@ void GameWorld::RemoveGameObject(GameObject* o) {
 	std::remove(gameObjects.begin(), gameObjects.end(), o);
 }
 
+
+
+
 void GameWorld::GetObjectIterators(
 	std::vector<GameObject*>::const_iterator& first,
 	std::vector<GameObject*>::const_iterator& last) const {

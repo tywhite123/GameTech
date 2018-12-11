@@ -3,7 +3,7 @@
 
 using namespace NCL::CSC8503;
 
-GameObject::GameObject(string objectName)	{
+GameObject::GameObject(int objID, string objectName) : objID(objID)	{
 	name			= objectName;
 	isActive		= true;
 	boundingVolume	= nullptr;

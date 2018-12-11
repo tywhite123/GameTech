@@ -7,7 +7,7 @@ using namespace NCL::CSC8503;
 class SpinnerObject : public GameObject
 {
 public:
-	SpinnerObject(std::string name, float spin);
+	SpinnerObject(int objID, std::string name, float spin);
 	~SpinnerObject();
 
 	StateMachine* GetStateMachine() { return spinnerMachine; }

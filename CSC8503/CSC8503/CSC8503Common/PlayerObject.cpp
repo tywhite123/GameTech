@@ -2,7 +2,7 @@
 #include "Debug.h"
 
 
-PlayerObject::PlayerObject(string name) : GameObject(name)
+PlayerObject::PlayerObject(int objID, string name) : GameObject(objID, name)
 {
 }
 

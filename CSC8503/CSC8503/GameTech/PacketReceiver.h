@@ -2,7 +2,35 @@
 #include "../CSC8503Common/NetworkBase.h"
 #include <iostream>
 
+struct UpdateData
+{
+	int objID;
+	Vector3 pos;
+	Quaternion ori;
 
+	UpdateData(int objID, Vector3 pos, Quaternion ori)
+	{
+		this->objID = objID;
+		this->pos = pos;
+		this->ori = ori;
+	}
+};
+
+struct BallData
+{
+	int peerID;
+	int objID;
+	Vector3 ballForce;
+	Vector3 collidedAt;
+
+	BallData(int peerID, int objID, Vector3 ballForce, Vector3 collidedAt)
+	{
+		this->peerID = peerID;
+		this->objID = objID;
+		this->ballForce = ballForce;
+		this->collidedAt = collidedAt;
+	}
+};
 
 class StringPacketReceiver : public PacketReceiver
 {
@@ -125,25 +153,35 @@ class ObjectPacketReceiver : public PacketReceiver
 public:
 	ObjectPacketReceiver() {};
 	//TODO: OBJECT CONSTRUCTOR
+	ObjectPacketReceiver(string name, vector<UpdateData*>& data)
+	{
+		this->name = name;
+		updateData = &data;
+	}
 
 	void ReceivePacket(int type, GamePacket* payload, int source) override
 	{
-		
+		if (type == Object_Data)
+		{
+			ObjectDataPacket* data = (ObjectDataPacket*)payload;
+			UpdateData d(data->objID, data->pos, data->ori);
+			updateData->push_back(&d);
+		}
 	}
 	
 protected:
 	string name;
+	vector<UpdateData*>* updateData;
 };
 
 class BallForcePacketReceiver : public PacketReceiver
 {
 public:
 	BallForcePacketReceiver() {};
-	BallForcePacketReceiver(string name, int& peerID, Vector3& ballForce, Vector3& collidedAt)
+	BallForcePacketReceiver(string name, std::vector<BallData>& ballData)
 	{
 		this->name = name;
-		*this->ballForce = ballForce;
-		*this->collidedAt = collidedAt;
+		this->ballData = &ballData;
 	}
 
 	void ReceivePacket(int type, GamePacket* payload, int source) override
@@ -151,17 +189,68 @@ public:
 		if(type == Ball_Force)
 		{
 			BallForcePacket* data = (BallForcePacket*)payload;
-			*peerID = source;
-			*ballForce = data->ballForce;
-			*collidedAt = data->collidedAt;
+			int peerID = source;
+			Vector3 ballForce = data->ballForce;
+			Vector3 collidedAt = data->collidedAt;
+			BallData b(peerID, peerID/*should be objID*/, ballForce, collidedAt); //TODO: change to objID
+			ballData->push_back(b); //TODO: maybe change?!
 		}
 	}
 
 protected:
 	string name;
-	int* peerID;
-	Vector3* ballForce;
-	Vector3* collidedAt;
+	std::vector<BallData>* ballData;
+};
+
+
+class ReadyPlayerPacketReceiver : public PacketReceiver
+{
+public:
+	ReadyPlayerPacketReceiver(){}
+	ReadyPlayerPacketReceiver(string name, std::map<int, bool>& readyPlayers){
+		this->name = name;
+		this->readyPlayers = &readyPlayers;
+	}
+
+	void ReceivePacket(int type, GamePacket* payload, int source) override
+	{
+		if (type == Player_Ready) //Ready
+		{
+			ReadyPlayerPacket* data = (ReadyPlayerPacket*)payload;
+			int peerID = source;
+			bool ready = data->ready;
+			readyPlayers->insert(std::pair<int, bool>(peerID, ready));
+		}
+	}
+
+protected:
+	string name;
+	std::map<int, bool>* readyPlayers;
+};
+
+class AllPlayersReadyReceiver:public PacketReceiver
+{
+public:
+	AllPlayersReadyReceiver(){}
+	AllPlayersReadyReceiver(string name, bool& ready)
+	{
+		this->name = name;
+		this->ready = &ready;
+	}
+
+	void ReceivePacket(int type, GamePacket* payload, int source) override
+	{
+		if (type == All_Players_Ready) //Ready
+		{
+			AllPlayersReadyPacket* data = (AllPlayersReadyPacket*)payload;
+			*ready = data->allReady;
+			
+		}
+	}
+
+protected:
+	string name;
+	bool* ready;
 };
 
 

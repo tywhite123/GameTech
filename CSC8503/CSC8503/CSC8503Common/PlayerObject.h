@@ -9,7 +9,7 @@ class PlayerObject :
 	public GameObject
 {
 public:
-	PlayerObject(string name);
+	PlayerObject(int objID, string name);
 	virtual ~PlayerObject();
 
 	void SetStartingPos(Vector3 s) { startingPos = s; }
