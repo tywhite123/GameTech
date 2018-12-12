@@ -190,9 +190,9 @@ int main() {
 
 		DisplayPathfinding();
 
-		//w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
+		w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
-		//n->UpdateServer();
+		//n->UpdateServer(dt);
 		g->UpdateGame(dt);
 		
 	}

@@ -33,6 +33,7 @@ namespace NCL {
 			void InitWorld();
 
 			void LoadLevel(std::string file);
+			void LoadLevelFromServer(std::string l);
 
 			bool SelectObject();
 			void MoveSelectedObject();
@@ -63,6 +64,7 @@ namespace NCL {
 			OGLTexture* basicTex = nullptr;
 			OGLShader*	basicShader = nullptr;
 
+			bool fin;
 			Level* level;
 
 			GameClient* client;
@@ -71,6 +73,7 @@ namespace NCL {
 			StringPacketReceiver clientReceiver;
 			ObjectPacketReceiver objectDataReceiver;
 			AllPlayersReadyReceiver allPlayersReadyReceiver;
+			LevelFinishedPacketReceiver finishedPacketReceiver;
 
 			int playerID;
 			string playerName;
@@ -91,7 +94,14 @@ namespace NCL {
 			vector<UpdateData*> updateData;
 
 			std::map<int, GameObject*> dynamicObjects;
-			
+
+
+			int stateID;
+			bool actuallyConnected;
+
+			bool sent;
+
+			string currentLevel;
 
 		};
 	}

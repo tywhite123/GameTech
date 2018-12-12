@@ -6,6 +6,8 @@
 #include "RobotObject.h"
 #include "MovingWallObject.h"
 #include "../CSC8503Common/PlayerObject.h"
+#include "SpinnerObject.h"
+#include "../../Common/TextureLoader.h"
 
 #define COLLISION_MSG 30
 #define NAME "Server"
@@ -16,6 +18,8 @@ NetworkGame::NetworkGame()
 {
 	world = new GameWorld();
 	physics = new PhysicsSystem(*world);
+	renderer = new GameTechRenderer(*world);
+	physics->UseGravity(true);
 	//players = 0;
 	NetworkBase::Initialise();
 	int port = NetworkBase::GetDefaultPort();
@@ -23,29 +27,81 @@ NetworkGame::NetworkGame()
 	stringReceiver = StringPacketReceiver(NAME);
 	playerReceiver = PlayerConnectedPacketReceiver(NAME, players);
 	scoreReceiver = ScorePacketReceiver(NAME, scores);
-	//ballForceReceiver = BallForcePacketReceiver(NAME, playerToUpdate, ballForce, collidedAt);
+	ballForceReceiver = BallForcePacketReceiver(NAME, ballData);
+	readyPlayerReceiver = ReadyPlayerPacketReceiver(NAME, readyPlayers);
 
+	stateID = 0;
 
 	server->RegisterPacketHandler(Player_Connected, &playerReceiver);
 	server->RegisterPacketHandler(String, &stringReceiver);
 	server->RegisterPacketHandler(Score, &scoreReceiver);
-	//server->RegisterPacketHandler(Ball_Force, &ballForceReceiver);
+	server->RegisterPacketHandler(Ball_Force, &ballForceReceiver);
+	server->RegisterPacketHandler(Player_Ready, &readyPlayerReceiver);
+	
+	
+	lvl = Level::GetInstance();
+	InitialiseAssets();
 
-	server->SetNewPlayer(newPlayer);
-	LoadLevel("TestLevel1.txt");
+	server->SetNewPlayer(newPlayer);	
+	
+	//LoadLevel("TestLevel1.txt");
+
+	finished = false;
+
+	sendUpdate = 0;
 }
 
 NetworkGame::~NetworkGame()
 {
 	delete physics;
+	delete renderer;
 	delete world;
 	NetworkBase::Destroy();
 }
 
+
+void NetworkGame::InitialiseAssets()
+{
+	cubeMesh = new OGLMesh("cube.msh");
+	cubeMesh->SetPrimitiveType(GeometryPrimitive::Triangles);
+	cubeMesh->UploadToGPU();
+
+	sphereMesh = new OGLMesh("sphere.msh");
+	sphereMesh->SetPrimitiveType(GeometryPrimitive::Triangles);
+	sphereMesh->UploadToGPU();
+
+	basicTex = (OGLTexture*)TextureLoader::LoadAPITexture("checkerboard.png");
+	basicShader = new OGLShader("GameTechVert.glsl", "GameTechFrag.glsl");
+
+	InitCamera();
+	InitWorld();
+}
+
+void NetworkGame::InitCamera()
+{
+	world->GetMainCamera()->SetNearPlane(3.0f);
+	world->GetMainCamera()->SetFarPlane(4200.0f);
+	world->GetMainCamera()->SetPitch(-35.0f);
+	world->GetMainCamera()->SetYaw(320.0f);
+	world->GetMainCamera()->SetPosition(Vector3(-100, 120, 200));
+}
+
+void NetworkGame::InitWorld()
+{
+
+	world->ClearAndErase();
+	physics->Clear();
+	level = "";
+	LoadLevel("TestLevel" + std::to_string(lvl->GetLevel()) + ".txt");
+}
+
+
 void NetworkGame::UpdateServer(float dt)
 {
+	
+	world->GetMainCamera()->UpdateCamera(dt);
 	world->UpdateWorld(dt);
-	physics->Update(dt);
+	
 	//server->SendGlobalMessage(StringPacket("Server Side of the game is working!!"));
 	if(newPlayer)
 	{
@@ -64,21 +120,81 @@ void NetworkGame::UpdateServer(float dt)
 		server->SendGlobalMessage(StringPacket(toSend));
 		scores.clear();
 	}
+	if (readyPlayers.size() == server->GetClientCount() && server->GetClientCount() != 0)
+	{
+		server->SendGlobalMessage(AllPlayersReadyPacket());
+		readyPlayers.clear();
+	}
+
 
 	server->UpdateServer();
 
 
+	for (StateMachine*s : stateMachines)
+		s->Update();
 
-	vector<GameObject*>::const_iterator first;
-	vector<GameObject*>::const_iterator last;
-	world->GetObjectIterators(first, last);
-
-	for (auto i = first; i != last; ++i)
-	{
-		if ((*i)->GetPhysicsObject()->GetInverseMass() > 0)
-			server->SendGlobalMessage(ObjectDataPacket((*i)->GetObjID(), (*i)->GetTransform().GetWorldPosition(), (*i)->GetTransform().GetWorldOrientation()));
+	if (!finished) {
+		for (auto ball : ballData)
+		{
+			std::cout << ball->objID << ": " << ball->ballForce << " " << ball->collidedAt << std::endl;
+			playerBalls.at(ball->objID)->GetPhysicsObject()->AddForceAtPosition(ball->ballForce, ball->collidedAt);
+			//playerBalls.at(ball->objID)->GetPhysicsObject()->ApplyLinearImpulse(ball->ballForce);
+			delete ball;
+		}
+		ballData.clear();
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+	renderer->Update(dt);
+	physics->Update(dt);
+
+
+	if (sendUpdate == 1 && !finished) {
+		for (auto dObj : dynamicObjects) {
+			server->SendGlobalMessage(ObjectDataPacket(stateID, dObj->GetObjID(),
+				dObj->GetTransform().GetWorldPosition(), dObj->GetTransform().GetWorldOrientation(), dObj->GetPhysicsObject()->GetLinearVelocity()));
+
+			stateID++;
+		}
+
+		sendUpdate = 0;
+
+	}
+
+	if(lvl->loadNext)
+	{
+		for(auto o : playerBalls)
+		{
+			if(o.second->GetObjID() == lvl->objID)
+			{
+				if (finishedLevel.count(o.first) < 1) {
+					finishedLevel.insert(std::pair<int, bool>(o.first, lvl->loadNext));
+					lvl->loadNext = false;
+					lvl->SetLevel(lvl->GetLevel() - 1);
+					server->SendGlobalMessage(LevelFinishedPacket(o.first));
+				}
+			}
+		}
+	}
+
+	sendUpdate++;
+
+	if (finishedLevel.size() == server->GetClientCount() && server->GetClientCount() != 0)
+	{
+		lvl->objID = -1;
+		finished = true;
+		lvl->loadNext = false;
+		lvl->SetLevel(lvl->GetLevel() + 1);
+		//wait for all players ready then load next level
+		finishedLevel.clear();
+		stateMachines.clear();
+		dynamicObjects.clear();
+		InitWorld();
+		finished = false;
+	}
+
+	renderer->Render();
+
+	//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 /**
@@ -145,6 +261,10 @@ void NetworkGame::LoadLevel(std::string filename)
 					{
 						AddRobotToWorld(objID, pos, cubeDims*0.5f, 0);
 					}
+					else if (in == 's')
+					{
+						AddSpinnerToWorld(objID, pos, Vector3(cubeDims.x*0.15f, cubeDims.y*0.35f, cubeDims.z), 10.0f, 10.0f);
+					}
 					width++;
 					objID++;
 				}
@@ -173,7 +293,7 @@ GameObject* NetworkGame::AddPlayerToWorld(int objID, const Vector3 & position, f
 	player->GetTransform().SetWorldPosition(position);
 	player->SetStartingPos(position);
 
-	//player->SetRenderObject(new RenderObject(&player->GetTransform(), sphereMesh, basicTex, basicShader));
+	player->SetRenderObject(new RenderObject(&player->GetTransform(), sphereMesh, basicTex, basicShader));
 	player->SetPhysicsObject(new PhysicsObject(&player->GetTransform(), player->GetBoundingVolume()));
 
 	player->GetPhysicsObject()->SetInverseMass(inverseMass);
@@ -181,8 +301,11 @@ GameObject* NetworkGame::AddPlayerToWorld(int objID, const Vector3 & position, f
 	player->GetPhysicsObject()->SetElasticity(0.66f);
 	player->GetPhysicsObject()->SetCanImpulse(true);
 	player->GetPhysicsObject()->SetAffectedByGrav(true);
-	//player->level = level;
+	player->level = lvl;
 
+	playerBalls.insert(std::pair<int, PlayerObject*>(objID, player));
+
+	dynamicObjects.push_back((GameObject*)player);
 	world->AddGameObject((GameObject*)player);
 
 	return player;
@@ -200,7 +323,7 @@ GameObject* NetworkGame::AddWallToWorld(int objID, const Vector3 & position, Vec
 	wall->GetTransform().SetWorldPosition(position);
 	wall->GetTransform().SetWorldScale(dimensions);
 
-	//wall->SetRenderObject(new RenderObject(&wall->GetTransform(), cubeMesh, basicTex, basicShader));
+	wall->SetRenderObject(new RenderObject(&wall->GetTransform(), cubeMesh, basicTex, basicShader));
 	wall->SetPhysicsObject(new PhysicsObject(&wall->GetTransform(), wall->GetBoundingVolume()));
 
 	wall->GetPhysicsObject()->SetInverseMass(inverseMass);
@@ -226,7 +349,7 @@ GameObject* NetworkGame::AddGoalToWorld(int objID, const Vector3 & position, Vec
 	goal->GetTransform().SetWorldPosition(position);
 	goal->GetTransform().SetWorldScale(dimensions);
 
-	//goal->SetRenderObject(new RenderObject(&goal->GetTransform(), cubeMesh, basicTex, basicShader));
+	goal->SetRenderObject(new RenderObject(&goal->GetTransform(), cubeMesh, basicTex, basicShader));
 	goal->SetPhysicsObject(new PhysicsObject(&goal->GetTransform(), goal->GetBoundingVolume()));
 
 	goal->GetPhysicsObject()->SetInverseMass(inverseMass);
@@ -252,7 +375,7 @@ GameObject * NetworkGame::AddMovingToWorld(int objID, const Vector3 & position, 
 	movingWall->GetTransform().SetWorldPosition(position);
 	movingWall->GetTransform().SetWorldScale(dimensions);
 
-	//movingWall->SetRenderObject(new RenderObject(&movingWall->GetTransform(), cubeMesh, basicTex, basicShader));
+	movingWall->SetRenderObject(new RenderObject(&movingWall->GetTransform(), cubeMesh, basicTex, basicShader));
 	movingWall->SetPhysicsObject(new PhysicsObject(&movingWall->GetTransform(), movingWall->GetBoundingVolume()));
 
 	movingWall->GetPhysicsObject()->SetInverseMass(inverseMass);
@@ -264,9 +387,9 @@ GameObject * NetworkGame::AddMovingToWorld(int objID, const Vector3 & position, 
 	movingWall->GetPhysicsObject()->SetAffectedByGrav(false);
 
 	movingWall->SetupStateMachine();
+	stateMachines.push_back(movingWall->GetStateMachine());
 
-	//stateMachines.push_back(movingWall->GetStateMachine());
-
+	dynamicObjects.push_back((GameObject*)movingWall);
 	world->AddGameObject((GameObject*)movingWall);
 
 	return movingWall;
@@ -284,7 +407,7 @@ GameObject * NetworkGame::AddRobotToWorld(int objID, const Vector3 & position, V
 	robot->GetTransform().SetWorldPosition(position);
 	robot->GetTransform().SetWorldScale(dimensions);
 
-	//robot->SetRenderObject(new RenderObject(&robot->GetTransform(), cubeMesh, basicTex, basicShader));
+	robot->SetRenderObject(new RenderObject(&robot->GetTransform(), cubeMesh, basicTex, basicShader));
 	robot->SetPhysicsObject(new PhysicsObject(&robot->GetTransform(), robot->GetBoundingVolume()));
 
 	robot->GetPhysicsObject()->SetInverseMass(inverseMass);
@@ -297,12 +420,47 @@ GameObject * NetworkGame::AddRobotToWorld(int objID, const Vector3 & position, V
 
 	robot->SetupStateMachine();
 
-	//stateMachines.push_back(robot->GetStateMachine());
+	stateMachines.push_back(robot->GetStateMachine());
 
+
+	dynamicObjects.push_back((GameObject*)robot);
 	world->AddGameObject((GameObject*)robot);
 
 	return robot;
 }
+
+GameObject* NetworkGame::AddSpinnerToWorld(int objID, const Vector3 & position, Vector3 dimensions, float inverseMass, float spinVal)
+{
+	SpinnerObject* spinner = new SpinnerObject(objID, "Spinner", spinVal);
+	OBBVolume* volume = new OBBVolume(dimensions);
+
+	spinner->SetBoundingVolume((CollisionVolume*)volume);
+
+	spinner->GetTransform().SetWorldPosition(position);
+	spinner->GetTransform().SetWorldScale(dimensions);
+
+	spinner->SetRenderObject(new RenderObject(&spinner->GetTransform(), cubeMesh, basicTex, basicShader));
+	spinner->SetPhysicsObject(new PhysicsObject(&spinner->GetTransform(), spinner->GetBoundingVolume()));
+
+	spinner->GetPhysicsObject()->SetInverseMass(inverseMass);
+	spinner->GetPhysicsObject()->InitCubeInertia();
+
+	spinner->GetPhysicsObject()->SetElasticity(0.3f);
+	spinner->GetPhysicsObject()->SetPhysical(true);
+	spinner->GetPhysicsObject()->SetCanImpulse(false);
+	spinner->GetPhysicsObject()->SetAffectedByGrav(false);
+
+	spinner->SetupStateMachine();
+
+	stateMachines.push_back(spinner->GetStateMachine());
+
+	dynamicObjects.push_back((GameObject*)spinner);
+
+	world->AddGameObject((GameObject*)spinner);
+
+	return spinner;
+}
+
 
 //TODO: Update with the new one from singleplayer
 GameObject* NetworkGame::AddFloorToWorld(int objID, const Vector3 & position, Vector3 dimensions)
@@ -313,13 +471,13 @@ GameObject* NetworkGame::AddFloorToWorld(int objID, const Vector3 & position, Ve
 	floor->GetTransform().SetWorldScale(dimensions);
 	floor->GetTransform().SetWorldPosition(position);
 
-	//floor->SetRenderObject(new RenderObject(&floor->GetTransform(), cubeMesh, basicTex, basicShader));
+	floor->SetRenderObject(new RenderObject(&floor->GetTransform(), cubeMesh, basicTex, basicShader));
 	floor->SetPhysicsObject(new PhysicsObject(&floor->GetTransform(), floor->GetBoundingVolume()));
 
 	floor->GetPhysicsObject()->SetInverseMass(0);
 	floor->GetPhysicsObject()->InitCubeInertia();
 
-	floor->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
+	//floor->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
 
 	world->AddGameObject(floor);
 

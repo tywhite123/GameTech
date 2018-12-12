@@ -16,6 +16,7 @@ void PlayerObject::OnCollisionBegin(GameObject * otherObject)
 		if (!level->loadNext) {
 			level->loadNext = true;
 			level->SetLevel(level->GetLevel() + 1);
+			level->objID = objID;
 		}
 	}
 	if(otherObject->GetName() == "Robot")

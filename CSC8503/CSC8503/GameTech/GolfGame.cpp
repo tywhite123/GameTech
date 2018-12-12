@@ -14,6 +14,7 @@
 #include "RobotObject.h"
 #include "SpinnerObject.h"
 #include "../CSC8503Common/PushdownState.h"
+#include <sstream>
 
 Level* Level::instance = 0;
 
@@ -24,7 +25,7 @@ GolfGame::GolfGame()
 	physics = new PhysicsSystem(*world);
 
 	forceMagnitude = 10.0f;
-	useGravity = false;
+	useGravity = true;
 	inSelectionMode = false;
 	playerPushes = 0;
 	cameraDist = 40;
@@ -37,6 +38,9 @@ GolfGame::GolfGame()
 	sMachine = new StateMachine();
 
 	allReady = false;
+	actuallyConnected = false;
+
+	sent = false;
 
 
 	Debug::SetRenderer(renderer);
@@ -96,15 +100,17 @@ void GolfGame::InitialiseNetwork()
 	clientReceiver = StringPacketReceiver(playerName);
 	objectDataReceiver = ObjectPacketReceiver(playerName, updateData);
 	allPlayersReadyReceiver = AllPlayersReadyReceiver(playerName, allReady);
+	finishedPacketReceiver = LevelFinishedPacketReceiver(playerName, fin);
 
 	client->RegisterPacketHandler(String, &clientReceiver);
 	client->RegisterPacketHandler(Object_Data, &objectDataReceiver);
 	client->RegisterPacketHandler(All_Players_Ready, &allPlayersReadyReceiver);
+	client->RegisterPacketHandler(Level_Finished, &finishedPacketReceiver);
 	client->SetName(name);
+	client->SetConnected(actuallyConnected);
 
 	//TODO: move to where the player select multiplayer
 	connected = client->Connect(127, 0, 0, 1, port);
-
 
 
 	
@@ -202,12 +208,17 @@ void GolfGame::SetupPushdown()
 		if (Window::GetKeyboard()->KeyPressed(KEYBOARD_RETURN))
 		{
 			//TODO: ready up serveer stuff
-			g->state = Game;
+			g->client->SendPacket(ReadyPlayerPacket());
 		}
 
 		if (Window::GetKeyboard()->KeyPressed(KEYBOARD_BACK))
 		{
 			g->state = Main_Menu;
+		}
+		if(g->allReady)
+		{
+			g->state = Game;
+			g->allReady = false;
 		}
 	};
 
@@ -242,12 +253,16 @@ void GolfGame::SetupPushdown()
 	GenericTransition<int&, int>* lobbyB = new GenericTransition<int&, int>(
 		GenericTransition<int&, int>::EqualsTransition, (int&)state, Main_Menu, lobbyState, menuState);
 
+	//GenericTransition<int&, int>* gameB = new GenericTransition<int&, int>(
+		//GenericTransition<int&, int>::EqualsTransition, (int&)state, Lobby, gameState, lobbyState);
+
 	sMachine->AddTransition(menuA);
 	sMachine->AddTransition(gameA);
 	sMachine->AddTransition(pauseA);
 	sMachine->AddTransition(menuB);
 	sMachine->AddTransition(lobbyA);
 	sMachine->AddTransition(lobbyB);
+	//sMachine->AddTransition(gameB);
 
 
 }
@@ -298,17 +313,18 @@ void GolfGame::UpdateGame(float dt)
 
 		world->UpdateWorld(dt);
 		renderer->Update(dt);
-		physics->Update(dt);
+		if (!actuallyConnected) {
+			physics->Update(dt);
 
-		for (StateMachine*s : stateMachines)
-			s->Update();
+			for (StateMachine*s : stateMachines)
+				s->Update();
+		}
 
 
 		if (level->loadNext) {
 			renderer->DrawString("Level Finished", Vector2(1280 / 3, 720 / 2), Vector4(1, 1, 1, 1));
 			renderer->DrawString("Press Enter to Load Next Level!", Vector2(1280 / 6, (720 / 2) - 40), Vector4(1, 1, 1, 1));
 			renderer->DrawString("Score: " + std::to_string(playerPushes) + "!", Vector2(1280 / 3, (720 / 2) - 80), Vector4(1, 1, 0, 1));
-
 			printed = false;
 
 		}
@@ -317,24 +333,47 @@ void GolfGame::UpdateGame(float dt)
 
 		if (connected)
 		{
-
-			if (level->loadNext && !printed) {
-				client->SendPacket(StringPacket(playerName + " finished level " + std::to_string(level->GetLevel() - 1)));
-				client->SendPacket(ScorePacket(playerPushes));
-				printed = true;
-
+			if (actuallyConnected) {
+				if(allReady && level->GetLevel() > 1)
+				{
+					allReady = false;
+					stateMachines.clear();
+					InitWorld();
+					level->loadNext = false;
+				}
+				if (level->loadNext && !printed && !sent) {
+					client->SendPacket(StringPacket(playerName + " finished level " + std::to_string(level->GetLevel() - 1)));
+					client->SendPacket(ScorePacket(playerPushes));
+					printed = true;
+					sent = true;
+					level->SetLevel(level->GetLevel() + 1);
+				}
 			}
 			client->UpdateClient();
-
-
-			//More efficient way?
-			for(UpdateData* d: updateData)
-			{
-				GameObject* obj = dynamicObjects.at(d->objID);
-				obj->GetTransform().SetWorldPosition(d->pos);
-				obj->GetTransform().SetLocalOrientation(d->ori);
+			if (fin) {
+				level->loadNext = true;
+				for (UpdateData* d : updateData)
+				{
+					delete d; //Maybe?
+				}
+				updateData.clear();
 			}
-			updateData.clear();
+			if (actuallyConnected && !level->loadNext) {
+				//Data from the server physics system
+				for (UpdateData* d : updateData)
+				{
+					if (d->stateID < stateID)
+						std::cout << "Problem" << std::endl;
+					GameObject* obj = dynamicObjects.at(d->objID);
+					obj->GetTransform().SetLocalPosition(d->pos);
+					obj->GetTransform().SetWorldPosition(d->pos);
+					obj->GetTransform().SetLocalOrientation(d->ori);
+					obj->GetPhysicsObject()->SetLinearVelocity(d->vel);
+					stateID = d->stateID;
+					delete d; //Maybe?
+				}
+				updateData.clear();
+			}
 		}
 
 		Debug::FlushRenderables();
@@ -353,8 +392,9 @@ void GolfGame::UpdateGame(float dt)
 		renderer->DrawString("Multiplayer Lobby!", Vector2(100, 600), Vector4(0, 1, 0, 1));
 		renderer->DrawString("Players Connected: ", Vector2(100, 500), Vector4(0, 1, 0, 1));
 		renderer->DrawString(playerName, Vector2(100, 450), Vector4(0, 0, 0, 1));
-		//client->UpdateClient();
 		
+		client->UpdateClient();
+
 
 		world->UpdateWorld(dt);
 		renderer->Update(dt);
@@ -434,9 +474,16 @@ void GolfGame::UpdateKeys()
 	{
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_RETURN))
 		{
-			stateMachines.clear();
-			InitWorld();
-			level->loadNext = false;
+			if (!actuallyConnected) {
+				allReady = false;
+				stateMachines.clear();
+				InitWorld();
+				level->loadNext = false;
+			}
+			else
+			{
+				client->SendPacket(ReadyPlayerPacket());
+			}
 		}
 	}
 
@@ -459,7 +506,9 @@ void GolfGame::InitWorld()
 	LoadLevel("TestLevel" + std::to_string(level->GetLevel()) + ".txt");
 	printed = false;
 	playerPushes = 0;
-
+	sent = false;
+	level->loadNext = false;
+	fin = false;
 }
 
 
@@ -540,6 +589,75 @@ void GolfGame::LoadLevel(std::string filename)
 	AddFloorToWorld(objID, Vector3((cubeDims.x*cubeDims.z) - cubeDims.x, -(cubeDims.y * 2)/*-cubeDims.y*/, (cubeDims.x*cubeDims.z) - cubeDims.z), Vector3((cubeDims.x*cubeDims.z), 10, (cubeDims.x*cubeDims.z)));
 }
 
+void GolfGame::LoadLevelFromServer(std::string l)
+{
+	int width = 0;
+	int depth = 0;
+	int x, y, z;
+	Vector3 cubeDims;
+	int i = 0;
+	int objID = 0;
+	
+	string line;
+	std::stringstream split(l);
+
+	while (split.good())
+	{
+		getline(split, line, '\n');
+		if (std::regex_match(line, std::regex("[0-9]+")))
+		{
+			switch (i)
+			{
+			case 0: x = stoi(line); break;
+			case 1: y = stoi(line); break;
+			case 2:
+				z = stoi(line);
+				cubeDims = Vector3(x, y, z);
+				break;
+			}
+			i++;
+		}
+		else
+		{
+			for (char& in : line) {
+				Vector3 pos(width*(cubeDims.x * 2), 0, depth*(cubeDims.z * 2));
+				if (in == 'x')
+				{
+					AddWallToWorld(objID, pos, cubeDims, 0);
+				}
+				else if (in == 'S')
+				{
+					AddPlayerToWorld(objID, pos, cubeDims.x * 0.5f, 10.0f);
+
+				}
+				else if (in == 'E')
+				{
+					AddGoalToWorld(objID, pos, cubeDims*0.5f, 0);
+				}
+				else if (in == 'm')
+				{
+					AddMovingToWorld(objID, pos, Vector3(cubeDims.x*0.25f, cubeDims.y*0.35f, cubeDims.z), 1.f);
+
+				}
+				else if (in == 'r')
+				{
+					AddRobotToWorld(objID, pos, cubeDims*0.5f, 0);
+				}
+				else if (in == 's')
+				{
+					AddSpinnerToWorld(objID, pos, Vector3(cubeDims.x*0.15f, cubeDims.y*0.35f, cubeDims.z), 10.0f, 10.0f);
+				}
+				width++;
+				objID++;
+			}
+			depth++;
+			width = 0;
+		}
+
+	}
+	AddFloorToWorld(objID, Vector3((cubeDims.x*cubeDims.z) - cubeDims.x, -(cubeDims.y * 2)/*-cubeDims.y*/, (cubeDims.x*cubeDims.z) - cubeDims.z), Vector3((cubeDims.x*cubeDims.z), 10, (cubeDims.x*cubeDims.z)));
+}
+
 //bool GolfGame::SelectObject()
 //{
 //	if (Window::GetKeyboard()->KeyPressed(KEYBOARD_Q)) {
@@ -598,9 +716,11 @@ void GolfGame::MoveSelectedObject()
 		RayCollision closestCollision;
 		if (world->Raycast(ray, closestCollision, true)) {
 			if (closestCollision.node == selectionObject) {
-
+				std::cout << ray.GetDirection() * forceMagnitude << " " << closestCollision.collidedAt << std::endl;
 				selectionObject->GetPhysicsObject()->AddForceAtPosition(ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
-				client->SendPacket(BallForcePacket(selectionObject->GetObjID(), ray.GetDirection() * forceMagnitude, closestCollision.collidedAt));
+				//selectionObject->GetPhysicsObject()->ApplyLinearImpulse(ray.GetDirection() * forceMagnitude);
+				if(connected)
+					client->SendPacket(BallForcePacket(selectionObject->GetObjID(), ray.GetDirection() * forceMagnitude, closestCollision.collidedAt));
 				if(selectionObject->GetName() == "Player" && !level->loadNext)
 					playerPushes++;
 			}

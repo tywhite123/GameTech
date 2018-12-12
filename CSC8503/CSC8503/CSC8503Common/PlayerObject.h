@@ -40,6 +40,7 @@ public:
 
 		return instance;
 	}
+	int objID = 0;
 	bool loadNext = false;
 	void SetLevel(int l) { level = l; }
 	int GetLevel() { return level; }

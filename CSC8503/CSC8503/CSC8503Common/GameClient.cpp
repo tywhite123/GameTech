@@ -21,6 +21,8 @@ bool GameClient::Connect(uint8_t a, uint8_t b, uint8_t c, uint8_t d, int portNum
 	address.port = portNum; //Port
 	address.host = (d << 24) | (c << 16) | (b << 8) | (a); //IP address to connect to
 
+
+
 	//Connect to the server
 	netPeer = enet_host_connect(netHandle, &address, 2, 0);
 	return netPeer != nullptr;
@@ -36,12 +38,13 @@ void GameClient::UpdateClient() {
 	while (enet_host_service(netHandle, &event, 0) > 0)
 	{
 		if (event.type == ENET_EVENT_TYPE_CONNECT) {
+			*connected = true;
 			*peerID = netPeer->outgoingPeerID;
 			SendPacket(PlayerNamePacket(name));
 			std::cout << "Connected to the server!" << std::endl;
 		}
 		else if (event.type == ENET_EVENT_TYPE_RECEIVE) {
-			std::cout << "Client: Packet Recived ..." << std::endl;
+			//std::cout << "Client: Packet Recived ..." << std::endl;
 			GamePacket* packet = (GamePacket*)event.packet->data;
 			ProcessPacket(packet);
 		}

@@ -4,7 +4,7 @@
 using namespace NCL;
 using namespace CSC8503;
 
-NetworkPlayer::NetworkPlayer(NetworkedGame* game, int num)	{
+NetworkPlayer::NetworkPlayer(int objID, NetworkedGame* game, int num) : GameObject(objID, "")	{
 	this->game = game;
 	playerNum  = num;
 }

@@ -4,15 +4,19 @@
 
 struct UpdateData
 {
+	int stateID;
 	int objID;
 	Vector3 pos;
 	Quaternion ori;
+	Vector3 vel;
 
-	UpdateData(int objID, Vector3 pos, Quaternion ori)
+	UpdateData(int sID, int objID, Vector3 pos, Quaternion ori, Vector3 vel)
 	{
+		stateID = sID;
 		this->objID = objID;
 		this->pos = pos;
 		this->ori = ori;
+		this->vel = vel;
 	}
 };
 
@@ -164,8 +168,8 @@ public:
 		if (type == Object_Data)
 		{
 			ObjectDataPacket* data = (ObjectDataPacket*)payload;
-			UpdateData d(data->objID, data->pos, data->ori);
-			updateData->push_back(&d);
+			UpdateData* d = new UpdateData(data->stateID, data->objID, data->pos, data->ori, data->vel);
+			updateData->push_back(d);
 		}
 	}
 	
@@ -178,7 +182,7 @@ class BallForcePacketReceiver : public PacketReceiver
 {
 public:
 	BallForcePacketReceiver() {};
-	BallForcePacketReceiver(string name, std::vector<BallData>& ballData)
+	BallForcePacketReceiver(string name, std::vector<BallData*>& ballData)
 	{
 		this->name = name;
 		this->ballData = &ballData;
@@ -190,16 +194,17 @@ public:
 		{
 			BallForcePacket* data = (BallForcePacket*)payload;
 			int peerID = source;
+			int objID = data->objID;
 			Vector3 ballForce = data->ballForce;
 			Vector3 collidedAt = data->collidedAt;
-			BallData b(peerID, peerID/*should be objID*/, ballForce, collidedAt); //TODO: change to objID
+			BallData* b = new BallData(peerID, objID/*should be objID*/, ballForce, collidedAt); //TODO: change to objID
 			ballData->push_back(b); //TODO: maybe change?!
 		}
 	}
 
 protected:
 	string name;
-	std::vector<BallData>* ballData;
+	std::vector<BallData*>* ballData;
 };
 
 
@@ -253,6 +258,31 @@ protected:
 	bool* ready;
 };
 
+
+class LevelFinishedPacketReceiver : public PacketReceiver
+{
+public:
+	LevelFinishedPacketReceiver() {}
+	LevelFinishedPacketReceiver(string name, bool& fin)
+	{
+		this->name = name;
+		this->fin = &fin;
+	}
+
+	void ReceivePacket(int type, GamePacket* payload, int source) override
+	{
+		if (type == Level_Finished) //Ready
+		{
+			LevelFinishedPacket* data = (LevelFinishedPacket*)payload;
+			*fin = data->finished;
+
+		}
+	}
+
+protected:
+	string name;
+	bool* fin;
+};
 
 
 

@@ -24,7 +24,8 @@ enum BasicNetworkMessages {
 	Ball_Force,
 	Object_Data,
 	Player_Ready,
-	All_Players_Ready
+	All_Players_Ready,
+	Level_Finished
 };
 
 struct GamePacket {
@@ -136,7 +137,7 @@ struct BallForcePacket : public GamePacket
 		this->objID = objID;
 		ballForce = force;
 		collidedAt = collided;
-		size = (sizeof(Vector3) * 2);
+		size = sizeof(int) + (sizeof(Vector3) * 2);
 		type = BasicNetworkMessages::Ball_Force;
 	}
 
@@ -144,16 +145,20 @@ struct BallForcePacket : public GamePacket
 
 struct ObjectDataPacket : public GamePacket
 {
+	int stateID;
 	int objID;
 	Vector3 pos;
 	Quaternion ori;
+	Vector3 vel;
 	
-	ObjectDataPacket(int objID, Vector3 pos, Quaternion ori)
+	ObjectDataPacket(int sID, int objID, Vector3 pos, Quaternion ori, Vector3 vel)
 	{
 		this->objID = objID;
 		this->pos = pos;
 		this->ori = ori;
-		size = (sizeof(int)) + sizeof(Vector3) + sizeof(Quaternion);
+		this->vel = vel;
+		stateID = sID;
+		size = (sizeof(int)*2) + sizeof(Vector3) + sizeof(Quaternion) + sizeof(Vector3);
 		type = Object_Data;
 	}
 	
@@ -181,6 +186,20 @@ struct AllPlayersReadyPacket : public GamePacket
 		size = sizeof(bool);
 		type = All_Players_Ready;
 	}
+};
+
+struct LevelFinishedPacket : public GamePacket
+{
+	bool finished;
+	int peerID;
+	LevelFinishedPacket(int peerID, bool r = true)
+	{
+		this->peerID = peerID;
+		finished = r;
+		size = sizeof(int) +  sizeof(bool);
+		type = Level_Finished;
+	}
+
 };
 
 
