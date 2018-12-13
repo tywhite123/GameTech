@@ -21,6 +21,7 @@ TutorialGame::TutorialGame()	{
 	forceMagnitude	= 10.0f;
 	useGravity		= false;
 	inSelectionMode = false;
+	test = 0;
 
 	Debug::SetRenderer(renderer);
 
@@ -73,6 +74,18 @@ void TutorialGame::UpdateGame(float dt) {
 	}
 	else {
 		Debug::Print("(G)ravity off", Vector2(10, 40));
+	}
+		
+	
+	if (selectionObject->GetTransform().GetWorldPosition().x > 0 || test > 20) {
+			selectionObject->GetPhysicsObject()->ApplyLinearImpulse(Vector3(0, -10, 0));
+			test++;
+			if (test > 50)
+				test = 0;
+		}
+	else if(selectionObject->GetTransform().GetWorldPosition().x <= 0) {
+		selectionObject->GetPhysicsObject()->ApplyLinearImpulse(Vector3(0, 10, 0));
+		test++;
 	}
 
 	SelectObject();
@@ -370,13 +383,14 @@ void TutorialGame::BridgeConstraintTest() {
 	Vector3 cubeSize = Vector3(8, 8, 8) * sizeMultiplier;
 
 	float invCubeMass = 5;
-	int numLinks = 10;
+	int numLinks = 1;
 	float maxDist = 30;
 	float cubeDist = 20;
 
 	Vector3 startPos = Vector3(0, 0, 0);
 
-	GameObject* start = AddCubeToWorld(startPos + Vector3(0, 0, 0), cubeSize, 0);
+	GameObject* start = AddCubeToWorld(startPos + Vector3(0, 0, 0), cubeSize, 0.0f);
+	//start->GetPhysicsObject()->SetAffectedByGrav(false);
 
 	GameObject* end = AddCubeToWorld(startPos + Vector3((numLinks + 2) * cubeDist, 0, 0), cubeSize, 0);
 
@@ -389,8 +403,10 @@ void TutorialGame::BridgeConstraintTest() {
 		previous = block;
 	}
 
-	PositionConstraint* constraint = new PositionConstraint(previous, end, maxDist);
-	world->AddConstraint(constraint);
+	selectionObject = previous;
+
+	//PositionConstraint* constraint = new PositionConstraint(previous, end, maxDist);
+	//world->AddConstraint(constraint);
 }
 
 void TutorialGame::SimpleGJKTest() {

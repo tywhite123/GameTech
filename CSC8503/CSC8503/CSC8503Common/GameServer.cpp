@@ -70,7 +70,7 @@ void GameServer::UpdateServer() {
 		if (type == ENET_EVENT_TYPE_CONNECT) {
 			//playerIDs->push_back(peer);
 			*newPlayer = true;
-			SendGlobalMessage(StringPacket(std::to_string(peer) + "Connected"));
+			SendGlobalMessage((GamePacket&)StringPacket(std::to_string(peer) + "Connected"));
 			std::cout << "Server: New client connected" << std::endl;
 			clientCount++;
 
@@ -78,7 +78,7 @@ void GameServer::UpdateServer() {
 		else if (type == ENET_EVENT_TYPE_DISCONNECT) {
 			//vector<int>::iterator i = std::find(playerIDs->begin(), playerIDs->end(), peer);
 			//playerIDs->erase(i);
-			SendGlobalMessage(StringPacket(std::to_string(peer) + "Disonnected"));
+			SendGlobalMessage((GamePacket&)StringPacket(std::to_string(peer) + "Disonnected"));
 			std::cout << "Server: A client has disconnected" << std::endl;
 			clientCount--;
 		}

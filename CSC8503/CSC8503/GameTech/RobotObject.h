@@ -1,6 +1,8 @@
 #pragma once
 #include "../CSC8503Common/GameObject.h"
 #include "../CSC8503Common/StateMachine.h"
+#include "../CSC8503Common/PlayerObject.h"
+#include "../CSC8503Common/NavigationGrid.h"
 
 using namespace NCL::CSC8503;
 
@@ -19,5 +21,11 @@ public:
 
 protected:
 	StateMachine* robotMachine;
+	NavigationGrid* grid;
+	PlayerObject* player;
+	vector<Vector3> path;
+
+	bool pathFound;
+	int iter;
 };
 

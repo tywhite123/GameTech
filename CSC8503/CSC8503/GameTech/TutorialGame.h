@@ -64,6 +64,9 @@ namespace NCL {
 			OGLMesh*	sphereMesh	= nullptr;
 			OGLTexture* basicTex	= nullptr;
 			OGLShader*	basicShader = nullptr;
+			
+
+			int test;
 		};
 	}
 }

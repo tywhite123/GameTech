@@ -10,8 +10,8 @@
 #include "../CSC8503Common/NavigationGrid.h"
 
 #include "TutorialGame.h"
-#include "NetworkedGame.h"
-#include "GolfGame.h"
+//#include "NetworkedGame.h"
+//#include "GolfGame.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -165,14 +165,14 @@ int main() {
 	}	
 	//TestStateMachine();
 	//TestNetworking();
-	TestPathfinding();
+	//TestPathfinding();
 	
 	w->ShowOSPointer(false);
 	w->LockMouseToWindow(true);
 
-	//TutorialGame* g = new TutorialGame();
+	TutorialGame* g = new TutorialGame();
 	//NetworkGame* n = new NetworkGame();
-	GolfGame* g = new GolfGame();
+	//GolfGame* g = new GolfGame();
 	
 
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)) {
@@ -188,7 +188,7 @@ int main() {
 			w->ShowConsole(false);
 		}
 
-		DisplayPathfinding();
+		//DisplayPathfinding();
 
 		w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
