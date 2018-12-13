@@ -25,6 +25,9 @@ protected:
 	PlayerObject* player;
 	vector<Vector3> path;
 
+	Vector3 currentNode;
+	Vector3 toNode;
+
 	bool pathFound;
 	int iter;
 };
